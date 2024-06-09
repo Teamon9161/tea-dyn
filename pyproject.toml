@@ -1,0 +1,23 @@
+[project]
+name = "tea-dyn"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "teamon9161", email = "1127972945@qq.com" }
+]
+dependencies = []
+readme = "README.md"
+requires-python = ">= 3.8"
+
+[build-system]
+requires = ["maturin>=1.2,<2.0"]
+build-backend = "maturin"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.maturin]
+python-source = "python"
+module-name = "tea_dyn._lowlevel"
+features = ["pyo3/extension-module"]

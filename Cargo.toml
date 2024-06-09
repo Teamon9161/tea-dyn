@@ -1,0 +1,38 @@
+[package]
+name = "tea-dyn"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "tea_dyn"
+crate-type = ["cdylib"]
+
+[features]
+default = ["ndarray", "map", "time"]
+# types
+time = ["tevec/time"]
+
+# backends
+pl = ["tevec/pl"]
+ndarray = ["tevec/ndarray"]
+
+# methods
+map = ["tevec/map"]
+agg = ["tevec/agg"]
+rolling = ["tevec/rolling"]
+
+py = ["pyo3"]
+
+[dependencies]
+pyo3 = { version = "0.21", optional = true }
+derive_more = { version = "0.99", default-features = false, features = [
+    "from",
+] }
+tea-macros = { git = "https://github.com/Teamon9161/tevec.git", branch = "master" }
+
+[dependencies.tevec]
+git = "https://github.com/Teamon9161/tevec.git"
+branch = "master"
+default-features = false
+features = []
