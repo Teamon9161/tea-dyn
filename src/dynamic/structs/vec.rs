@@ -28,7 +28,7 @@ pub enum DynVec {
     OptUsize(Vec<Option<usize>>),
     VecUsize(Vec<Vec<usize>>),
     #[cfg(feature = "py")]
-    Object(Object),
+    Object(Vec<Object>),
     #[cfg(feature = "time")]
     DateTime(Vec<DateTime>),
     #[cfg(feature = "time")]
@@ -80,6 +80,8 @@ impl_from!(
     (String, String, string),
     (OptUsize, Option<usize>, opt_usize),
     (VecUsize, Vec<usize>, vec_usize),
+    #[cfg(feature = "py")]
+    (Object, Object, object),
     #[cfg(feature = "time")]
     (DateTime, DateTime, datetime),
     #[cfg(feature = "time")]

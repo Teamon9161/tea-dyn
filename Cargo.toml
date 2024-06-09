@@ -9,9 +9,9 @@ name = "tea_dyn"
 crate-type = ["cdylib"]
 
 [features]
-default = ["ndarray", "map", "time"]
+default = ["py", "ndarray", "map", "time"]
 # types
-time = ["tevec/time"]
+time = ["tevec/time", "pyo3/chrono"]
 
 # backends
 pl = ["tevec/pl"]
@@ -22,12 +22,15 @@ map = ["tevec/map"]
 agg = ["tevec/agg"]
 rolling = ["tevec/rolling"]
 
-py = ["pyo3"]
+py = ["pyo3", "numpy"]
 
 [dependencies]
 pyo3 = { version = "0.21", optional = true }
+numpy = { version = "0.21", optional = true }
 derive_more = { version = "0.99", default-features = false, features = [
     "from",
+    "display",
+    "deref",
 ] }
 tea-macros = { git = "https://github.com/Teamon9161/tevec.git", branch = "master" }
 

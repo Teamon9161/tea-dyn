@@ -27,9 +27,9 @@ macro_rules! match_enum {
             Usize($e) => $body,
             Str($e) => $body,
             String($e) => $body,
-            Object($e) => $body,
             OptUsize($e) => $body,
             VecUsize($e) => $body,
+            #[cfg(feature="py")] Object($e) => $body,
             #[cfg(feature="time")] DateTime($e) => $body,
             #[cfg(feature="time")] TimeDelta($e) => $body,
         )
@@ -49,8 +49,8 @@ macro_rules! match_enum {
             Bool($e) => $body,
             Usize($e) => $body,
             String($e) => $body,
-            // Object($e) => $body,
             OptUsize($e) => $body,
+            #[cfg(feature="py")] Object($e) => $body,
             #[cfg(feature="time")] DateTime($e) => $body,
             #[cfg(feature="time")] TimeDelta($e) => $body,
         )
@@ -70,9 +70,9 @@ macro_rules! match_enum {
             Bool($e) => $body,
             Usize($e) => $body,
             String($e) => $body,
-            Object($e) => $body,
             OptUsize($e) => $body,
             VecUsize($e) => $body,
+            #[cfg(feature="py")] Object($e) => $body,
             #[cfg(feature="time")] DateTime($e) => $body,
             #[cfg(feature="time")] TimeDelta($e) => $body,
         )
@@ -91,7 +91,9 @@ macro_rules! match_enum {
             U64($e) => $body,
             Bool($e) => $body,
             Usize($e) => $body,
-            Object($e) => $body,
+            #[cfg(feature="py")] Object($e) => $body,
+            #[cfg(feature="time")] DateTime($e) => $body,
+            #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };
 
@@ -111,6 +113,7 @@ macro_rules! match_enum {
             String($e) => $body,
             OptUsize($e) => $body,
             VecUsize($e) => $body,
+            #[cfg(feature="py")] Object($e) => $body,
             #[cfg(feature="time")] DateTime($e) => $body,
             #[cfg(feature="time")] TimeDelta($e) => $body,
         )

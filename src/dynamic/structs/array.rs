@@ -126,6 +126,8 @@ pub enum DynArray<'a> {
     String(ArbArray<'a, String>),
     OptUsize(ArbArray<'a, Option<usize>>),
     VecUsize(ArbArray<'a, Vec<usize>>),
+    #[cfg(feature = "py")]
+    Object(ArbArray<'a, Object>),
     #[cfg(feature = "time")]
     DateTime(ArbArray<'a, DateTime>),
     #[cfg(feature = "time")]
@@ -211,6 +213,8 @@ impl_from!(
     (String, String, string),
     (OptUsize, Option<usize>, opt_usize),
     (VecUsize, Vec<usize>, vec_usize),
+    #[cfg(feature = "py")]
+    (Object, Object, object),
     #[cfg(feature = "time")]
     (DateTime, DateTime, datetime),
     #[cfg(feature = "time")]

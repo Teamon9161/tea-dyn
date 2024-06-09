@@ -1,3 +1,4 @@
+pub use super::dtype::*;
 pub use super::dynamic::*;
 pub use super::expr::*;
 pub use std::sync::Arc;

@@ -28,6 +28,8 @@ pub enum DynTrustIter<'a> {
     String(TvIter<'a, String>),
     OptUsize(TvIter<'a, Option<usize>>),
     VecUsize(TvIter<'a, Vec<usize>>),
+    #[cfg(feature = "py")]
+    Object(TvIter<'a, Object>),
     #[cfg(feature = "time")]
     DateTime(TvIter<'a, DateTime>),
     #[cfg(feature = "time")]
@@ -43,28 +45,6 @@ impl<'a> DynTrustIter<'a> {
     pub fn collect_vec(self) -> TResult<DynVec> {
         crate::match_trust_iter!(self; dynamic(i) => Ok(i.collect_trusted_to_vec().into()),)
     }
-
-    // pub fn cast_to(self, dtype: DataType) -> TResult<DynTrustIter<'a>> {
-    //     let res: DynTrustIter = match dtype {
-    //         DataType::Bool => self.bool()?.into(),
-    //         DataType::F32 => self.f32()?.into(),
-    //         DataType::F64 => self.f64()?.into(),
-    //         DataType::I32 => self.i32()?.into(),
-    //         DataType::I64 => self.i64()?.into(),
-    //         DataType::U8 => self.u8()?.into(),
-    //         DataType::U64 => self.u64()?.into(),
-    //         DataType::Usize => self.usize()?.into(),
-    //         DataType::String => self.string()?.into(),
-    //         DataType::OptUsize => self.opt_usize()?.into(),
-    //         DataType::VecUsize => self.vec_usize()?.into(),
-    //         #[cfg(feature = "time")]
-    //         DataType::DateTime => self.datetime()?.into(),
-    //         #[cfg(feature = "time")]
-    //         DataType::TimeDelta => self.timedelta()?.into(),
-    //         _ => tbail!("Cast to type {:?} for TrustIter is not implemented", dtype),
-    //     };
-    //     Ok(res)
-    // }
 }
 
 macro_rules! impl_from {
@@ -113,6 +93,8 @@ impl_from!(
     (String, String, string),
     (OptUsize, Option<usize>, opt_usize),
     (VecUsize, Vec<usize>, vec_usize),
+    #[cfg(feature = "py")]
+    (Object, Object, object),
     #[cfg(feature = "time")]
     (DateTime, DateTime, datetime),
     #[cfg(feature = "time")]
