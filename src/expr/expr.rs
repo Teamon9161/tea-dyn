@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Expr {
     pub name: Option<Arc<String>>,
     pub nodes: Vec<Node>,

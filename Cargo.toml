@@ -25,7 +25,7 @@ rolling = ["tevec/rolling"]
 py = ["pyo3", "numpy"]
 
 [dependencies]
-pyo3 = { version = "0.21", optional = true }
+pyo3 = { version = "0.21", optional = true, features = ["multiple-pymethods"] }
 numpy = { version = "0.21", optional = true }
 derive_more = { version = "0.99", default-features = false, features = [
     "from",

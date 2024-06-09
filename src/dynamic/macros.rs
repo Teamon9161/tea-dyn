@@ -78,8 +78,8 @@ macro_rules! match_enum {
         )
     };
 
-    // match dtype that can be used in python
-    (@($enum: ident, $exprs: expr; py ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    // match normal dtype, no str, object, time, vecusize
+    (@($enum: ident, $exprs: expr; normal ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs; $($rest)*)
             $($all_arms)*
@@ -91,9 +91,10 @@ macro_rules! match_enum {
             U64($e) => $body,
             Bool($e) => $body,
             Usize($e) => $body,
-            #[cfg(feature="py")] Object($e) => $body,
-            #[cfg(feature="time")] DateTime($e) => $body,
-            #[cfg(feature="time")] TimeDelta($e) => $body,
+            OptUsize($e) => $body,
+            // #[cfg(feature="py")] Object($e) => $body,
+            // #[cfg(feature="time")] DateTime($e) => $body,
+            // #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };
 
