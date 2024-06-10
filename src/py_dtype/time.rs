@@ -1,27 +1,34 @@
 use crate::prelude::*;
-use numpy::{
-    datetime::{Datetime as NPDatetime, Unit as NPUnit},
-    npyffi::NPY_DATETIMEUNIT,
-};
+// use numpy::{
+//     datetime::{Datetime as NPDatetime, Unit as NPUnit},
+//     npyffi::NPY_DATETIMEUNIT,
+// };
 use pyo3::prelude::*;
 
-impl Cast<Object> for DateTime {
+impl<U: TimeUnitTrait> Cast<Object> for DateTime<U>
+where
+    CrDateTime<Utc>: From<Self>,
+{
     #[inline]
     fn cast(self) -> Object {
-        Python::with_gil(|py| Object(self.0.to_object(py)))
+        Python::with_gil(|py| Object(self.to_cr().unwrap().to_object(py)))
     }
 }
 
-impl Cast<DateTime> for Object {
+impl<U: TimeUnitTrait> Cast<DateTime<U>> for Object
+where
+    DateTime<U>: TryFrom<CrDateTime<Utc>> + From<CrDateTime<Utc>>,
+    <DateTime<U> as TryFrom<CrDateTime<Utc>>>::Error: std::fmt::Debug,
+{
     #[inline]
-    fn cast(self) -> DateTime {
+    fn cast(self) -> DateTime<U> {
         Python::with_gil(|py| {
-            if let Ok(v) = self.extract(py) {
-                DateTime(Some(v))
+            if let Ok(v) = self.extract::<CrDateTime<Utc>>(py) {
+                v.try_into().unwrap()
             } else if let Ok(s) = self.extract::<&str>(py) {
                 DateTime::parse(s, None).unwrap_or_default()
             } else {
-                DateTime(None)
+                DateTime::nat()
             }
         })
     }
@@ -55,43 +62,43 @@ impl Cast<TimeDelta> for Object {
     }
 }
 
-pub trait DateTimeToPy {
-    fn into_np_datetime<T: NPUnit>(self) -> NPDatetime<T>;
-}
+// pub trait DateTimeToPy {
+//     fn into_np_datetime<T: NPUnit>(self) -> NPDatetime<T>;
+// }
 
-impl DateTimeToPy for DateTime {
-    #[inline]
-    fn into_np_datetime<T: NPUnit>(self) -> NPDatetime<T> {
-        use NPY_DATETIMEUNIT::*;
-        if let Some(dt) = self.0 {
-            match T::UNIT {
-                NPY_FR_ms => dt.timestamp_millis().into(),
-                NPY_FR_us => dt.timestamp_micros().into(),
-                NPY_FR_ns => dt.timestamp_nanos_opt().unwrap_or(i64::MIN).into(),
-                _ => unreachable!(),
-            }
-        } else {
-            i64::MIN.into()
-        }
-    }
-}
+// impl DateTimeToPy for DateTime {
+//     #[inline]
+//     fn into_np_datetime<T: NPUnit>(self) -> NPDatetime<T> {
+//         use NPY_DATETIMEUNIT::*;
+//         if let Some(dt) = self.0 {
+//             match T::UNIT {
+//                 NPY_FR_ms => dt.timestamp_millis().into(),
+//                 NPY_FR_us => dt.timestamp_micros().into(),
+//                 NPY_FR_ns => dt.timestamp_nanos_opt().unwrap_or(i64::MIN).into(),
+//                 _ => unreachable!(),
+//             }
+//         } else {
+//             i64::MIN.into()
+//         }
+//     }
+// }
 
-pub trait DateTimeToRs {
-    fn to_rs(self) -> TResult<DateTime>;
-}
+// pub trait DateTimeToRs {
+//     fn to_rs(self) -> TResult<DateTime>;
+// }
 
-impl<U: NPUnit> DateTimeToRs for NPDatetime<U> {
-    fn to_rs(self) -> TResult<DateTime> {
-        use NPY_DATETIMEUNIT::*;
-        let value: i64 = self.into();
-        if value == i64::MIN {
-            return Ok(DateTime(None));
-        }
-        match U::UNIT {
-            NPY_FR_ms => Ok(DateTime::from_timestamp_ms(value).unwrap_or_default()),
-            NPY_FR_us => Ok(DateTime::from_timestamp_us(value).unwrap_or_default()),
-            NPY_FR_ns => Ok(DateTime::from_timestamp_ns(value).unwrap_or_default()),
-            _ => tbail!("not support cast timeunit {:?} to rust yet", U::UNIT),
-        }
-    }
-}
+// impl<U: NPUnit> DateTimeToRs for NPDatetime<U> {
+//     fn to_rs(self) -> TResult<DateTime> {
+//         use NPY_DATETIMEUNIT::*;
+//         let value: i64 = self.into();
+//         if value == i64::MIN {
+//             return Ok(DateTime(None));
+//         }
+//         match U::UNIT {
+//             NPY_FR_ms => Ok(DateTime::from_timestamp_ms(value).unwrap_or_default()),
+//             NPY_FR_us => Ok(DateTime::from_timestamp_us(value).unwrap_or_default()),
+//             NPY_FR_ns => Ok(DateTime::from_timestamp_ns(value).unwrap_or_default()),
+//             _ => tbail!("not support cast timeunit {:?} to rust yet", U::UNIT),
+//         }
+//     }
+// }

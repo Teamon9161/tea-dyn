@@ -18,14 +18,18 @@ pub enum Scalar {
     #[cfg(feature = "py")]
     Object(Object),
     #[cfg(feature = "time")]
-    DateTime(DateTime),
+    DateTimeMs(DateTime<unit::Millisecond>),
+    #[cfg(feature = "time")]
+    DateTimeUs(DateTime<unit::Microsecond>),
+    #[cfg(feature = "time")]
+    DateTimeNs(DateTime<unit::Nanosecond>),
     #[cfg(feature = "time")]
     TimeDelta(TimeDelta),
 }
 
 macro_rules! impl_from {
 
-    ($($(#[$meta:meta])? ($arm: ident, $ty: ty, $func_name: ident)),* $(,)?) => {
+    ($($(#[$meta:meta])? ($arm: ident, $dtype: ident $(($inner: path))?, $ty: ty, $func_name: ident)),* $(,)?) => {
         impl Scalar {
             $(
                 $(#[$meta])?
@@ -33,7 +37,7 @@ macro_rules! impl_from {
                     if let Scalar::$arm(v) = self {
                         Ok(v)
                     } else {
-                        tbail!("Scalar is not of type {:?}", DataType::$arm)
+                        tbail!("Scalar is not of type {:?}", <$ty>::dtype())
                     }
             })*
         }
@@ -44,7 +48,7 @@ macro_rules! impl_from {
             fn from(v: T) -> Self {
                 match T::dtype() {
                     $(
-                        $(#[$meta])? DataType::$arm => {
+                        $(#[$meta])? DataType::$dtype $(($inner))? => {
                             // safety: we have checked the type
                             let v: $ty = unsafe{std::mem::transmute_copy(&v)};
                             Scalar::$arm(v.into())
@@ -58,23 +62,27 @@ macro_rules! impl_from {
 }
 
 impl_from!(
-    (Bool, bool, bool),
-    (F32, f32, f32),
-    (F64, f64, f64),
-    (I32, i32, i32),
-    (I64, i64, i64),
-    (U8, u8, u8),
-    (U64, u64, u64),
-    (Usize, usize, usize),
-    (String, String, string),
-    (OptUsize, Option<usize>, opt_usize),
-    (VecUsize, Vec<usize>, vec_usize),
+    (Bool, Bool, bool, bool),
+    (F32, F32, f32, f32),
+    (F64, F64, f64, f64),
+    (I32, I32, i32, i32),
+    (I64, I64, i64, i64),
+    (U8, U8, u8, u8),
+    (U64, U64, u64, u64),
+    (Usize, Usize, usize, usize),
+    (String, String, String, string),
+    (OptUsize, OptUsize, Option<usize>, opt_usize),
+    (VecUsize, VecUsize, Vec<usize>, vec_usize),
     #[cfg(feature = "py")]
-    (Object, Object, object),
+    (Object, Object, Object, object),
     #[cfg(feature = "time")]
-    (DateTime, DateTime, datetime),
+    (DateTimeMs, DateTime(TimeUnit::Millisecond), DateTime<unit::Millisecond>, datetime_ms),
     #[cfg(feature = "time")]
-    (TimeDelta, TimeDelta, timedelta)
+    (DateTimeUs, DateTime(TimeUnit::Microsecond), DateTime<unit::Microsecond>, datetime_us),
+    #[cfg(feature = "time")]
+    (DateTimeNs, DateTime(TimeUnit::Nanosecond), DateTime<unit::Nanosecond>, datetime_ns),
+    #[cfg(feature = "time")]
+    (TimeDelta, TimeDelta, TimeDelta, timedelta)
 );
 
 #[macro_export]
@@ -110,7 +118,9 @@ impl Scalar {
             U8(v) => Ok((*v).into()),
             Bool(v) => Ok((*v).into()),
             String(v) => Ok(v.clone().into()),
-            #[cfg(feature = "time")] DateTime(v) => Ok((*v).into()),
+            #[cfg(feature = "time")] DateTimeMs(v) => Ok((*v).into()),
+            #[cfg(feature = "time")] DateTimeUs(v) => Ok((*v).into()),
+            #[cfg(feature = "time")] DateTimeNs(v) => Ok((*v).into()),
             #[cfg(feature = "time")] TimeDelta(v) => Ok((*v).into()),
         )
         .ok()
@@ -178,11 +188,23 @@ impl_cast!(
     Option<usize>,
     #[cfg(feature = "py")]
     Object,
-    #[cfg(feature = "time")]
-    DateTime,
+    // #[cfg(feature = "time")]
+    // DateTime,
     #[cfg(feature = "time")]
     TimeDelta
 );
+
+#[cfg(feature = "time")]
+impl<U: TimeUnitTrait> Cast<DateTime<U>> for Scalar {
+    #[inline]
+    fn cast(self) -> DateTime<U> {
+        match_scalar!(
+            self;
+            DateTimeMs(v) | DateTimeUs(v) | DateTimeNs(v) => Ok(v.into_unit::<U>().into()),
+        )
+        .unwrap()
+    }
+}
 
 impl Cast<Vec<usize>> for Scalar {
     #[inline]

@@ -13,7 +13,7 @@ macro_rules! match_enum {
     };
 
     // match all arm
-    (@($enum: ident, $exprs: expr; all ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    (@($enum: ident, $exprs: expr; dtype_all ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs; $($rest)*)
             $($all_arms)*
@@ -36,7 +36,7 @@ macro_rules! match_enum {
     };
 
     // match castable arm
-    (@($enum: ident, $exprs: expr; cast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    (@($enum: ident, $exprs: expr; dtype_cast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs; $($rest)*)
             $($all_arms)*
@@ -52,6 +52,29 @@ macro_rules! match_enum {
             OptUsize($e) => $body,
             #[cfg(feature="py")] Object($e) => $body,
             #[cfg(feature="time")] DateTime($e) => $body,
+            #[cfg(feature="time")] TimeDelta($e) => $body,
+        )
+    };
+
+    // match dynamic & castable arm
+    (@($enum: ident, $exprs: expr; cast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; $($rest)*)
+            $($all_arms)*
+            F32($e) => $body,
+            F64($e) => $body,
+            I32($e) => $body,
+            I64($e) => $body,
+            U8($e) => $body,
+            U64($e) => $body,
+            Bool($e) => $body,
+            Usize($e) => $body,
+            String($e) => $body,
+            OptUsize($e) => $body,
+            #[cfg(feature="py")] Object($e) => $body,
+            // #[cfg(feature="time")] DateTimeMs($e) => $body,
+            // #[cfg(feature="time")] DateTimeUs($e) => $body,
+            // #[cfg(feature="time")] DateTimeNs($e) => $body,
             #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };
@@ -115,7 +138,10 @@ macro_rules! match_enum {
             OptUsize($e) => $body,
             VecUsize($e) => $body,
             #[cfg(feature="py")] Object($e) => $body,
-            #[cfg(feature="time")] DateTime($e) => $body,
+            // #[cfg(feature="time")] DateTime($e) => $body,
+            #[cfg(feature="time")] DateTimeMs($e) => $body,
+            #[cfg(feature="time")] DateTimeUs($e) => $body,
+            #[cfg(feature="time")] DateTimeNs($e) => $body,
             #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };

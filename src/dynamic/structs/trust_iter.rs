@@ -31,7 +31,11 @@ pub enum DynTrustIter<'a> {
     #[cfg(feature = "py")]
     Object(TvIter<'a, Object>),
     #[cfg(feature = "time")]
-    DateTime(TvIter<'a, DateTime>),
+    DateTimeMs(TvIter<'a, DateTime<unit::Millisecond>>),
+    #[cfg(feature = "time")]
+    DateTimeUs(TvIter<'a, DateTime<unit::Microsecond>>),
+    #[cfg(feature = "time")]
+    DateTimeNs(TvIter<'a, DateTime<unit::Nanosecond>>),
     #[cfg(feature = "time")]
     TimeDelta(TvIter<'a, TimeDelta>),
 }
@@ -49,7 +53,7 @@ impl<'a> DynTrustIter<'a> {
 
 macro_rules! impl_from {
 
-    ($($(#[$meta:meta])? ($arm: ident, $ty: ty, $func_name: ident)),* $(,)?) => {
+    ($($(#[$meta:meta])? ($arm: ident, $dtype: ident $(($inner: path))?, $ty: ty, $func_name: ident)),* $(,)?) => {
         impl<'a> DynTrustIter<'a> {
             $(
                 $(#[$meta])?
@@ -57,7 +61,7 @@ macro_rules! impl_from {
                     if let DynTrustIter::$arm(v) = self {
                         Ok(v)
                     } else {
-                        tbail!("TrustIter is not of type {:?}", DataType::$arm)
+                        tbail!("TrustIter is not of type {:?}", <$ty>::dtype())
                     }
             })*
         }
@@ -68,7 +72,7 @@ macro_rules! impl_from {
             fn from(iter: I) -> Self {
                 match T::dtype() {
                     $(
-                        $(#[$meta])? DataType::$arm => {
+                        $(#[$meta])? DataType::$dtype $(($inner))? => {
                             let iter: TvIter<'a, T> = Box::new(iter);
                             // safety: we have checked the type
                             unsafe{DynTrustIter::<'a>::$arm(iter.into_dtype().into())}
@@ -82,23 +86,27 @@ macro_rules! impl_from {
 }
 
 impl_from!(
-    (Bool, bool, bool),
-    (F32, f32, f32),
-    (F64, f64, f64),
-    (I32, i32, i32),
-    (I64, i64, i64),
-    (U8, u8, u8),
-    (U64, u64, u64),
-    (Usize, usize, usize),
-    (String, String, string),
-    (OptUsize, Option<usize>, opt_usize),
-    (VecUsize, Vec<usize>, vec_usize),
+    (Bool, Bool, bool, bool),
+    (F32, F32, f32, f32),
+    (F64, F64, f64, f64),
+    (I32, I32, i32, i32),
+    (I64, I64, i64, i64),
+    (U8, U8, u8, u8),
+    (U64, U64, u64, u64),
+    (Usize, Usize, usize, usize),
+    (String, String, String, string),
+    (OptUsize, OptUsize, Option<usize>, opt_usize),
+    (VecUsize, VecUsize, Vec<usize>, vec_usize),
     #[cfg(feature = "py")]
-    (Object, Object, object),
+    (Object, Object, Object, object),
     #[cfg(feature = "time")]
-    (DateTime, DateTime, datetime),
+    (DateTimeMs, DateTime(TimeUnit::Millisecond), DateTime<unit::Millisecond>, datetime_ms),
     #[cfg(feature = "time")]
-    (TimeDelta, TimeDelta, timedelta)
+    (DateTimeUs, DateTime(TimeUnit::Microsecond), DateTime<unit::Microsecond>, datetime_us),
+    #[cfg(feature = "time")]
+    (DateTimeNs, DateTime(TimeUnit::Nanosecond), DateTime<unit::Nanosecond>, datetime_ns),
+    #[cfg(feature = "time")]
+    (TimeDelta, TimeDelta, TimeDelta, timedelta)
 );
 
 #[macro_export]

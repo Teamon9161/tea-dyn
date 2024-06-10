@@ -1,10 +1,67 @@
+use std::borrow::BorrowMut;
+
 use crate::prelude::*;
+use numpy::{
+    datetime::{units, Datetime},
+    PyArrayDyn,
+};
 use pyo3::{
     exceptions::PyValueError,
     prelude::*,
     types::{PyDict, PyList},
 };
 use tevec::dtype::chrono::{DateTime as CrDateTime, Utc};
+
+#[derive(FromPyObject)]
+pub enum PyArray<'py> {
+    Bool(&'py PyArrayDyn<bool>),
+    F32(&'py PyArrayDyn<f32>),
+    F64(&'py PyArrayDyn<f64>),
+    I32(&'py PyArrayDyn<i32>),
+    I64(&'py PyArrayDyn<i64>),
+    Object(&'py PyArrayDyn<Object>),
+    DateTimeMs(&'py PyArrayDyn<Datetime<units::Milliseconds>>),
+    DateTimeUs(&'py PyArrayDyn<Datetime<units::Microseconds>>),
+    DateTimeNs(&'py PyArrayDyn<Datetime<units::Nanoseconds>>),
+}
+
+impl<'py> FromPyObject<'py> for DynArray<'py> {
+    fn extract_bound(mut ob: &Bound<'py, PyAny>) -> PyResult<Self> {
+        if let Ok(mut pyarray) = ob.borrow_mut().extract::<PyArray<'py>>() {
+            match_enum!(
+                PyArray, &mut pyarray;
+                Bool(arr) | F32(arr) | F64(arr) | I32(arr) | I64(arr) => {
+                    if let Ok(mut arr) = arr.try_readwrite() {
+                        let arb_arr: ArbArray<'_, _> = arr.as_array_mut().into();
+                        // safety: this is only safe when python side keeps the array alive
+                        // since expressions will only be evaluated when context is alive,
+                        // we can safely assume that the array is alive
+                        let arb_arr: ArbArray<'py, _> = unsafe { arb_arr.into_life()};
+                        Ok(arb_arr.into())
+                    } else {
+                        let arr = arr.try_readonly()?;
+                        let arb_arr: ArbArray<'_, _> = arr.as_array().into();
+                        // safety: this is only safe when python side keeps the array alive
+                        // since expressions will only be evaluated when context is alive,
+                        // we can safely assume that the array is alive
+                        let arb_arr: ArbArray<'py, _> = unsafe { arb_arr.into_life()};
+                        Ok(arb_arr.into())
+                    }
+                },
+                #[cfg(feature = "time")] DateTimeMs(_arr) => {
+                    // let arr = arr.try_readonly()?.as_array();
+                    todo!()
+                },
+            )
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+        } else {
+            Err(PyValueError::new_err(format!(
+                "can not convert {:?} to DynArray",
+                ob
+            )))
+        }
+    }
+}
 
 impl<'py> FromPyObject<'py> for Backend {
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
@@ -67,7 +124,8 @@ impl<'a> FromPyObject<'a> for Scalar {
             #[cfg(feature = "time")]
             {
                 if let Ok(v) = obj.extract::<CrDateTime<Utc>>() {
-                    return Ok(DateTime(Some(v)).into());
+                    let v: DateTime = v.try_into().unwrap();
+                    return Ok(v.into());
                 }
                 // TODO: ability to extract timedelta from python sid
             }

@@ -3,4 +3,5 @@ mod object;
 mod time;
 
 pub use object::Object;
-pub use time::{DateTimeToPy, DateTimeToRs};
+// #[cfg(feature = "time")]
+// pub use time::{DateTimeToPy, DateTimeToRs};

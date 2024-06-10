@@ -33,10 +33,12 @@ derive_more = { version = "0.99", default-features = false, features = [
     "deref",
     "is_variant",
 ] }
-tea-macros = { git = "https://github.com/Teamon9161/tevec.git", branch = "master" }
+# tea-macros = { git = "https://github.com/Teamon9161/tevec.git", branch = "master" }
+tea-macros = { path = "../tevec/tea-macros" }
 
 [dependencies.tevec]
-git = "https://github.com/Teamon9161/tevec.git"
-branch = "master"
+path = "../tevec/tevec"
+# git = "https://github.com/Teamon9161/tevec.git"
+# branch = "master"
 default-features = false
 features = []

@@ -178,7 +178,6 @@ impl<'a> Data<'a> {
                     Err(vec.into())
                 }
             }
-            // #[cfg(feature = "ndarray")]
             Data::Array(array) => {
                 if array.len() == 1 {
                     Ok(array.get(0).unwrap())

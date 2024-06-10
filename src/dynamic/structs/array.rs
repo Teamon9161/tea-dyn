@@ -4,6 +4,8 @@ use derive_more::From;
 use tea_macros::GetDtype;
 use tevec::ndarray::prelude::*;
 use tevec::ndarray::{Data, DataMut, Zip};
+// #[cfg(feature = "time")]
+// pub use TimeUnit::*;
 
 pub trait NdArrayExt<T, D: Dimension> {
     fn apply_along_axis<'a, 'b, S2, T2, F>(
@@ -129,13 +131,17 @@ pub enum DynArray<'a> {
     #[cfg(feature = "py")]
     Object(ArbArray<'a, Object>),
     #[cfg(feature = "time")]
-    DateTime(ArbArray<'a, DateTime>),
+    DateTimeMs(ArbArray<'a, DateTime<unit::Millisecond>>),
+    #[cfg(feature = "time")]
+    DateTimeUs(ArbArray<'a, DateTime<unit::Microsecond>>),
+    #[cfg(feature = "time")]
+    DateTimeNs(ArbArray<'a, DateTime<unit::Nanosecond>>),
     #[cfg(feature = "time")]
     TimeDelta(ArbArray<'a, TimeDelta>),
 }
 macro_rules! impl_from {
 
-    ($($(#[$meta:meta])? ($arm: ident, $ty: ty, $func_name: ident)),* $(,)?) => {
+    ($($(#[$meta:meta])? ($arm: ident, $dtype: ident $(($inner: path))?, $ty: ty, $func_name: ident)),* $(,)?) => {
         impl<'a> DynArray<'a> {
             $(
                 $(#[$meta])?
@@ -143,7 +149,7 @@ macro_rules! impl_from {
                     if let DynArray::$arm(v) = self {
                         Ok(v)
                     } else {
-                        tbail!("DynArray is not of type {:?}", DataType::$arm)
+                        tbail!("DynArray is not of type {:?}", <$ty>::dtype())
                     }
             })*
         }
@@ -154,7 +160,7 @@ macro_rules! impl_from {
             fn from(a: ArrayD<T>) -> Self {
                 match T::dtype() {
                     $(
-                        $(#[$meta])? DataType::$arm => {
+                        $(#[$meta])? DataType::$dtype $(($inner))? => {
                             // safety: we have checked the type
                             let a: ArbArray<'a, _> = a.into();
                             unsafe{DynArray::$arm(a.into_dtype().into())}
@@ -171,7 +177,7 @@ macro_rules! impl_from {
             fn from(a: ArrayViewD<'a, T>) -> Self {
                 match T::dtype() {
                     $(
-                        $(#[$meta])? DataType::$arm => {
+                        $(#[$meta])? DataType::$dtype $(($inner))? => {
                             // safety: we have checked the type
                             let a: ArbArray<'a, _> = a.into();
                             unsafe{DynArray::$arm(a.into_dtype().into())}
@@ -188,7 +194,7 @@ macro_rules! impl_from {
             fn from(a: ArrayViewMutD<'a, T>) -> Self {
                 match T::dtype() {
                     $(
-                        $(#[$meta])? DataType::$arm => {
+                        $(#[$meta])? DataType::$dtype $(($inner))? => {
                             // safety: we have checked the type
                             let a: ArbArray<'a, _> = a.into();
                             unsafe{DynArray::$arm(a.into_dtype().into())}
@@ -202,23 +208,27 @@ macro_rules! impl_from {
 }
 
 impl_from!(
-    (Bool, bool, bool),
-    (F32, f32, f32),
-    (F64, f64, f64),
-    (I32, i32, i32),
-    (I64, i64, i64),
-    (U8, u8, u8),
-    (U64, u64, u64),
-    (Usize, usize, usize),
-    (String, String, string),
-    (OptUsize, Option<usize>, opt_usize),
-    (VecUsize, Vec<usize>, vec_usize),
+    (Bool, Bool, bool, bool),
+    (F32, F32, f32, f32),
+    (F64, F64, f64, f64),
+    (I32, I32, i32, i32),
+    (I64, I64, i64, i64),
+    (U8, U8, u8, u8),
+    (U64, U64, u64, u64),
+    (Usize, Usize, usize, usize),
+    (String, String, String, string),
+    (OptUsize, OptUsize, Option<usize>, opt_usize),
+    (VecUsize, VecUsize, Vec<usize>, vec_usize),
     #[cfg(feature = "py")]
-    (Object, Object, object),
+    (Object, Object, Object, object),
     #[cfg(feature = "time")]
-    (DateTime, DateTime, datetime),
+    (DateTimeMs, DateTime(TimeUnit::Millisecond), DateTime<unit::Millisecond>, datetime_ms),
     #[cfg(feature = "time")]
-    (TimeDelta, TimeDelta, timedelta)
+    (DateTimeUs, DateTime(TimeUnit::Microsecond), DateTime<unit::Microsecond>, datetime_us),
+    #[cfg(feature = "time")]
+    (DateTimeNs, DateTime(TimeUnit::Nanosecond), DateTime<unit::Nanosecond>, datetime_ns),
+    #[cfg(feature = "time")]
+    (TimeDelta, TimeDelta, TimeDelta, timedelta)
 );
 
 #[macro_export]
@@ -281,6 +291,13 @@ impl<'a, T: Clone> ArbArray<'a, T> {
     #[inline]
     pub fn view(&self) -> ArrayViewD<'_, T> {
         match_arb!(self; Owned(v) | View(v) | ViewMut(v) => Ok(v.view()),).unwrap()
+    }
+
+    #[inline]
+    /// this is safe only when 'b is actually longer than 'a
+    /// do not use this function unless you are sure about the lifetime
+    pub unsafe fn into_life<'b>(self) -> ArbArray<'b, T> {
+        std::mem::transmute(self)
     }
 
     pub fn into_vec(self) -> TResult<Vec<T>> {

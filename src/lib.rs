@@ -1,3 +1,5 @@
+#![feature(more_qualified_paths)]
+
 mod dynamic;
 mod expr;
 #[cfg(feature = "py")]
