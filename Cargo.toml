@@ -31,6 +31,7 @@ derive_more = { version = "0.99", default-features = false, features = [
     "from",
     "display",
     "deref",
+    "is_variant",
 ] }
 tea-macros = { git = "https://github.com/Teamon9161/tevec.git", branch = "master" }
 

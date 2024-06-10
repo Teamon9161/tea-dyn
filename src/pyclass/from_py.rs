@@ -6,6 +6,28 @@ use pyo3::{
 };
 use tevec::dtype::chrono::{DateTime as CrDateTime, Utc};
 
+impl<'py> FromPyObject<'py> for Backend {
+    fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        if let Ok(s) = obj.extract::<&str>() {
+            match s {
+                "pandas" | "pd" => Ok(Backend::Pandas),
+                "numpy" | "np" => Ok(Backend::Numpy),
+                "vec" | "list" => Ok(Backend::Vec),
+                // "polars" | "pl" => Ok(Backend::Polars),
+                _ => Err(PyValueError::new_err(format!(
+                    "can not convert {:?} to Backend",
+                    s
+                ))),
+            }
+        } else {
+            Err(PyValueError::new_err(format!(
+                "can not convert {:?} to Backend",
+                obj
+            )))
+        }
+    }
+}
+
 impl<'py> FromPyObject<'py> for DynVec {
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         let vec = if let Ok(v) = obj.extract::<Vec<bool>>() {
@@ -70,7 +92,10 @@ impl<'py> FromPyObject<'py> for Context<'py> {
             todo!()
         } else if let Ok(pylist) = ob.downcast::<PyList>() {
             let ctx: Vec<Data<'py>> = pylist.into_iter().map(|v| v.extract().unwrap()).collect();
-            Ok(Context { data: ctx })
+            Ok(Context {
+                data: ctx,
+                backend: None,
+            })
         } else {
             todo!()
         }

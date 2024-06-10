@@ -50,10 +50,10 @@ impl Expr {
         let node = CtxNode {
             name: "shift",
             func: Arc::new(move |data, ctx| {
-                let n = n.eval(ctx)?.into_scalar()?.i32()?;
+                let n = n.eval(ctx, None)?.into_scalar()?.i32()?;
                 let value = value
                     .as_ref()
-                    .map(|v| v.eval(ctx).unwrap().into_scalar().unwrap());
+                    .map(|v| v.eval(ctx, None).unwrap().into_scalar().unwrap());
                 // Ok(data.into_iter()?.vshift(n, value)?.into())
                 match data.try_into_iter() {
                     Ok(iter) => Ok(iter.vshift(n, value)?.into()),

@@ -283,6 +283,18 @@ impl<'a, T: Clone> ArbArray<'a, T> {
         match_arb!(self; Owned(v) | View(v) | ViewMut(v) => Ok(v.view()),).unwrap()
     }
 
+    pub fn into_vec(self) -> TResult<Vec<T>> {
+        if self.ndim() > 1 {
+            tbail!("Array with ndim > 1 should not be converted into vector")
+        }
+        match self {
+            ArbArray::Owned(v) => Ok(v.into_raw_vec()),
+            ArbArray::View(v) => Ok(v.to_owned().into_raw_vec()),
+            // TODO: can we optimize this? mut reference can be converted into owned without cloning
+            ArbArray::ViewMut(v) => Ok(v.to_owned().into_raw_vec()),
+        }
+    }
+
     #[inline]
     pub fn titer<'b>(&'b self) -> TResult<Box<dyn TrustedLen<Item = T> + 'b>> {
         if self.ndim() == 1 {
@@ -366,6 +378,18 @@ impl<'a> DynArray<'a> {
     #[inline]
     pub fn view(&self) -> DynArray<'_> {
         match_array!(self; dynamic(v) => Ok(v.view().into()),).unwrap()
+    }
+
+    #[inline]
+    pub fn into_vec(self) -> TResult<DynVec> {
+        match_array!(self; dynamic(v) => Ok(v.into_vec()?.into()),)
+    }
+
+    #[inline]
+    pub fn from_vec(vec: DynVec) -> TResult<DynArray<'a>> {
+        match_vec!(vec; dynamic(v) => {
+            Ok(Array1::from_vec(v).into_dyn().into())
+        },)
     }
 
     #[inline]

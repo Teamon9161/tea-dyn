@@ -69,37 +69,46 @@ impl Expr {
                     }
                 }
             }
-            let data: Data = data.ok_or_else(|| terr!("No data to return"))?;
-            match data {
-                // TODO: Maybe we can use `into_vec`, `into_array` to control output backend?
-                Data::TrustIter(iter) => {
-                    // collect for iter output
-                    if let Ok(iter) = Arc::try_unwrap(iter) {
-                        // TODO: default to vec, but should be able to change to other types
-                        let out: DynVec = iter.collect_vec()?;
-                        Ok(out.into())
-                    } else {
-                        tbail!("cannot collect iterator as it is still shared")
-                    }
-                }
-                Data::Array(array) => {
-                    Ok(array.into())
-                    // if lifetime of array is 'a, this should only happend when
-                    // che expression just select one column and no other operation
-                    // so the array can live as long as context, which is 'b
-                    // Ok(unsafe { std::mem::transmute::<Data<'a>, Data<'b>>(array.into()) })
-                }
-                Data::Scalar(s) => Ok(s.into()),
-                Data::Vec(v) => Ok(v.into()),
-                // Data::Vec(_) => Ok(unsafe { std::mem::transmute::<Data<'a>, Data<'static>>(data) }), // safe as Vec doesn't contain any references
-            }
+            data.ok_or_else(|| terr!("No data to return"))
+            // match data {
+            //     // TODO: Maybe we can use `into_vec`, `into_array` to control output backend?
+            //     Data::TrustIter(iter) => {
+            //         // collect for iter output
+            //         if let Ok(iter) = Arc::try_unwrap(iter) {
+            //             // TODO: default to vec, but should be able to change to other types
+            //             let out: DynVec = iter.collect_vec()?;
+            //             Ok(out.into())
+            //         } else {
+            //             tbail!("cannot collect iterator as it is still shared")
+            //         }
+            //     }
+            //     Data::Array(array) => {
+            //         Ok(array.into())
+            //         // if lifetime of array is 'a, this should only happend when
+            //         // che expression just select one column and no other operation
+            //         // so the array can live as long as context, which is 'b
+            //         // Ok(unsafe { std::mem::transmute::<Data<'a>, Data<'b>>(array.into()) })
+            //     }
+            //     Data::Scalar(s) => Ok(s.into()),
+            //     Data::Vec(v) => Ok(v.into()),
+            //     // Data::Vec(_) => Ok(unsafe { std::mem::transmute::<Data<'a>, Data<'static>>(data) }), // safe as Vec doesn't contain any references
+            // }
         };
         Box::new(func)
     }
 
     #[inline]
-    pub fn eval<'a, 'b>(&'a self, ctx: &'a Context<'b>) -> TResult<Data<'b>> {
+    pub fn eval<'a, 'b>(
+        &'a self,
+        ctx: &'a Context<'b>,
+        backend: Option<Backend>,
+    ) -> TResult<Data<'b>> {
         let func = self.to_func();
-        func(ctx)
+        let backend = if backend.is_none() && ctx.backend.is_some() {
+            ctx.backend
+        } else {
+            backend
+        };
+        func(ctx)?.into_result(backend)
     }
 }

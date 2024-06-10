@@ -1,7 +1,7 @@
 use crate::prelude::*;
-use derive_more::From;
+use derive_more::{From, IsVariant};
 
-#[derive(From, Clone)]
+#[derive(From, Clone, IsVariant)]
 pub enum Data<'a> {
     TrustIter(Arc<DynTrustIter<'a>>),
     Scalar(Arc<Scalar>),
@@ -88,6 +88,21 @@ impl<'a> Data<'a> {
     }
 
     #[inline]
+    /// if output of the expression is a trust iter, consume and convert it to a result
+    pub fn into_result(self, backend: Option<Backend>) -> TResult<Self> {
+        let backend = backend.unwrap_or(Backend::Numpy);
+        if self.is_trust_iter() {
+            // this function only works for trust iter
+            match backend {
+                Backend::Numpy | Backend::Pandas => self.into_array().map(|a| a.into()),
+                Backend::Vec => self.into_vec().map(|v| v.into()),
+            }
+        } else {
+            Ok(self)
+        }
+    }
+
+    #[inline]
     #[allow(clippy::missing_transmute_annotations)]
     pub fn into_array(self) -> TResult<DynArray<'a>> {
         if let Data::Array(array) = self {
@@ -101,24 +116,38 @@ impl<'a> Data<'a> {
                 }
             }
         } else {
-            // TODO: Maybe we can convert iterator and scalar to vec
-            // and then directly convert to array?
-            tbail!("Data is not an array")
+            let vec = self
+                .into_vec()
+                .map_err(|_| terr!("Can not convert data to an array"))?;
+            DynArray::from_vec(vec)
         }
     }
 
     #[inline]
     pub fn into_vec(self) -> TResult<DynVec> {
-        if let Data::Vec(vec) = self {
-            match Arc::try_unwrap(vec) {
+        match self {
+            Data::Vec(vec) => match Arc::try_unwrap(vec) {
                 Ok(vec) => Ok(vec),
                 Err(_) => {
                     tbail!("Can not convert data into vector as it is shared")
                 }
+            },
+            Data::TrustIter(iter) => {
+                if let Ok(iter) = Arc::try_unwrap(iter) {
+                    iter.collect_vec()
+                } else {
+                    tbail!("Can not convert iterator into vector as it is shared")
+                }
             }
-        } else {
-            // TODO: Iterator and Scalar can be converted to Vec
-            tbail!("Data is not an vector")
+            Data::Array(array) => {
+                if let Ok(array) = Arc::try_unwrap(array) {
+                    array.into_vec()
+                } else {
+                    tbail!("Can not convert array into vector as it is shared")
+                }
+            }
+            // TODO: should we convert scalar to vec?
+            _ => tbail!("Data is not a vector"),
         }
     }
 
@@ -208,29 +237,5 @@ impl<'a> Data<'a> {
                 }
             }
         }
-    }
-}
-
-#[derive(Default)]
-pub struct Context<'a> {
-    pub data: Vec<Data<'a>>,
-}
-
-impl<'a> Context<'a> {
-    #[inline]
-    pub fn new<D: Into<Data<'a>>>(d: D) -> Self {
-        Context {
-            data: vec![d.into()],
-        }
-    }
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.data.len()
-    }
-
-    #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
     }
 }

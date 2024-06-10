@@ -60,16 +60,18 @@ impl PyExpr {
         self.clone().0.alias(name).into()
     }
 
-    #[pyo3(signature=(ctx=None))]
+    #[pyo3(signature=(ctx=None, backend=None))]
     pub fn eval<'py>(
         &'py self,
         ctx: Option<&'py Bound<'py, PyAny>>,
+        backend: Option<&'py Bound<'py, PyAny>>,
         py: Python<'py>,
     ) -> PyResult<PyObject> {
         let ctx: Context<'py> = ctx.map(|c| c.extract().unwrap()).unwrap_or_default();
+        let backend: Option<Backend> = backend.map(|bk| bk.extract().unwrap());
         let out = self
             .0
-            .eval(&ctx)
+            .eval(&ctx, backend)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(out.into_py(py))
     }
