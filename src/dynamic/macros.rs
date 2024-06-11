@@ -15,152 +15,156 @@ macro_rules! match_enum {
     // match all arm
     (@($enum: ident, $exprs: expr; dtype_all ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
+            @($enum, $exprs;
+                (
+                    Normal | String | VecUsize | Str
+                    | #[cfg(feature="py")] Object
+                    | #[cfg(feature="time")] DateTime
+                    | #[cfg(feature="time")] TimeDelta
+                )
+                ($e) => $body,
+            $($rest)*)
             $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U8($e) => $body,
-            U64($e) => $body,
-            Bool($e) => $body,
-            Usize($e) => $body,
-            Str($e) => $body,
-            String($e) => $body,
-            OptUsize($e) => $body,
-            VecUsize($e) => $body,
-            #[cfg(feature="py")] Object($e) => $body,
-            #[cfg(feature="time")] DateTime($e) => $body,
-            #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };
 
-    // match castable arm
-    (@($enum: ident, $exprs: expr; dtype_cast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
-        $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
-            $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U8($e) => $body,
-            U64($e) => $body,
-            Bool($e) => $body,
-            Usize($e) => $body,
-            String($e) => $body,
-            OptUsize($e) => $body,
-            #[cfg(feature="py")] Object($e) => $body,
-            #[cfg(feature="time")] DateTime($e) => $body,
-            #[cfg(feature="time")] TimeDelta($e) => $body,
-        )
-    };
+    // // match castable arm
+    // (@($enum: ident, $exprs: expr; DtypeCast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    //     $crate::match_enum!(
+    //         @($enum, $exprs;
+    //             Normal
+    //         $($rest)*)
+    //         $($all_arms)*
+    //         // F32($e) => $body,
+    //         // F64($e) => $body,
+    //         // I32($e) => $body,
+    //         // I64($e) => $body,
+    //         // U8($e) => $body,
+    //         // U64($e) => $body,
+    //         // Bool($e) => $body,
+    //         // Usize($e) => $body,
+    //         // String($e) => $body,
+    //         // OptUsize($e) => $body,
+    //         #[cfg(feature="py")] Object($e) => $body,
+    //         #[cfg(feature="time")] DateTime($e) => $body,
+    //         #[cfg(feature="time")] TimeDelta($e) => $body,
+    //     )
+    // };
 
     // match dynamic & castable arm
-    (@($enum: ident, $exprs: expr; cast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    (@($enum: ident, $exprs: expr; Cast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
+            @($enum, $exprs;
+                (Normal | String | #[cfg(feature="py")] Object | #[cfg(feature="time")] TimeDelta)($e) => $body,
+            $($rest)*)
             $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U8($e) => $body,
-            U64($e) => $body,
-            Bool($e) => $body,
-            Usize($e) => $body,
-            String($e) => $body,
-            OptUsize($e) => $body,
-            #[cfg(feature="py")] Object($e) => $body,
-            // #[cfg(feature="time")] DateTimeMs($e) => $body,
-            // #[cfg(feature="time")] DateTimeUs($e) => $body,
-            // #[cfg(feature="time")] DateTimeNs($e) => $body,
-            #[cfg(feature="time")] TimeDelta($e) => $body,
-        )
-    };
-
-    // match non-reference dtype(no str)
-    (@($enum: ident, $exprs: expr; own ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
-        $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
-            $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U8($e) => $body,
-            U64($e) => $body,
-            Bool($e) => $body,
-            Usize($e) => $body,
-            String($e) => $body,
-            OptUsize($e) => $body,
-            VecUsize($e) => $body,
-            #[cfg(feature="py")] Object($e) => $body,
-            #[cfg(feature="time")] DateTime($e) => $body,
-            #[cfg(feature="time")] TimeDelta($e) => $body,
-        )
-    };
-
-    // match normal dtype, no str, object, time, vecusize
-    (@($enum: ident, $exprs: expr; normal ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
-        $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
-            $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U8($e) => $body,
-            U64($e) => $body,
-            Bool($e) => $body,
-            Usize($e) => $body,
-            OptUsize($e) => $body,
+            // F32($e) => $body,
+            // F64($e) => $body,
+            // I32($e) => $body,
+            // I64($e) => $body,
+            // U8($e) => $body,
+            // U64($e) => $body,
+            // Bool($e) => $body,
+            // Usize($e) => $body,
+            // String($e) => $body,
+            // OptUsize($e) => $body,
             // #[cfg(feature="py")] Object($e) => $body,
-            // #[cfg(feature="time")] DateTime($e) => $body,
+            // // #[cfg(feature="time")] DateTimeMs($e) => $body,
+            // // #[cfg(feature="time")] DateTimeUs($e) => $body,
+            // // #[cfg(feature="time")] DateTimeNs($e) => $body,
             // #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };
 
-    // match dtype that support dynamic(currently str and Object doesn't support)
-    (@($enum: ident, $exprs: expr; dynamic ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    // // match non-reference dtype(no str)
+    // (@($enum: ident, $exprs: expr; own ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    //     $crate::match_enum!(
+    //         @($enum, $exprs; $($rest)*)
+    //         $($all_arms)*
+    //         F32($e) => $body,
+    //         F64($e) => $body,
+    //         I32($e) => $body,
+    //         I64($e) => $body,
+    //         U8($e) => $body,
+    //         U64($e) => $body,
+    //         Bool($e) => $body,
+    //         Usize($e) => $body,
+    //         String($e) => $body,
+    //         OptUsize($e) => $body,
+    //         VecUsize($e) => $body,
+    //         #[cfg(feature="py")] Object($e) => $body,
+    //         #[cfg(feature="time")] DateTime($e) => $body,
+    //         #[cfg(feature="time")] TimeDelta($e) => $body,
+    //     )
+    // };
+
+    // match normal dtype, no str, object, time, vecusize
+    (@($enum: ident, $exprs: expr; Normal ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
+            @($enum, $exprs; (Numeric | BoolLike)($e) => $body, $($rest)*)
             $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U8($e) => $body,
-            U64($e) => $body,
-            Bool($e) => $body,
-            Usize($e) => $body,
-            String($e) => $body,
-            OptUsize($e) => $body,
-            VecUsize($e) => $body,
-            #[cfg(feature="py")] Object($e) => $body,
-            // #[cfg(feature="time")] DateTime($e) => $body,
-            #[cfg(feature="time")] DateTimeMs($e) => $body,
-            #[cfg(feature="time")] DateTimeUs($e) => $body,
-            #[cfg(feature="time")] DateTimeNs($e) => $body,
-            #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };
 
-    // match int like arm
-    (@($enum: ident, $exprs: expr; int ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    // match dtype that support Dynamic(currently str doesn't support)
+    (@($enum: ident, $exprs: expr; Dynamic ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
+            @($enum, $exprs;
+                (Normal | String | VecUsize | TimeRelated)($e) => $body,
+            $($rest)*)
             $($all_arms)*
-            I32($e) => $body,
-            I64($e) => $body,
-            U64($e) => $body,
-            Usize($e) => $body,
-            OptUsize($e) => $body,
+            // F32($e) => $body,
+            // F64($e) => $body,
+            // I32($e) => $body,
+            // I64($e) => $body,
+            // U8($e) => $body,
+            // U64($e) => $body,
+            // Bool($e) => $body,
+            // Usize($e) => $body,
+            // String($e) => $body,
+            // OptUsize($e) => $body,
+            // VecUsize($e) => $body,
+            // #[cfg(feature="py")] Object($e) => $body,
+            // // #[cfg(feature="time")] DateTime($e) => $body,
+            // #[cfg(feature="time")] DateTimeMs($e) => $body,
+            // #[cfg(feature="time")] DateTimeUs($e) => $body,
+            // #[cfg(feature="time")] DateTimeNs($e) => $body,
+            // #[cfg(feature="time")] TimeDelta($e) => $body,
+        )
+    };
+
+    // match pure int like arm
+    (@($enum: ident, $exprs: expr; PureInt ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (I32 | I64 | U64 | Usize)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match int like arm (pure_int + OptUsize)
+    (@($enum: ident, $exprs: expr; Int ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (PureInt | OptUsize)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match bool like arm
+    (@($enum: ident, $exprs: expr; BoolLike ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (Bool | U8)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
         )
     };
 
     // match float like arm
-    (@($enum: ident, $exprs: expr; float ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    (@($enum: ident, $exprs: expr; Float ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs; $($rest)*)
             $($all_arms)*
@@ -169,34 +173,67 @@ macro_rules! match_enum {
         )
     };
 
-    // match pure numeric arm
-    (@($enum: ident, $exprs: expr; pure_numeric ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    // match time like arm
+    (@($enum: ident, $exprs: expr; Time ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
+            @($enum, $exprs;
+            (
+                #[cfg(feature="time")] DateTimeMs
+                | #[cfg(feature="time")] DateTimeUs
+                | #[cfg(feature="time")] DateTimeNs
+            )
+            ($e) => $body,
+            $($rest)*)
             $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U64($e) => $body,
-            Usize($e) => $body,
         )
     };
 
-    // match numeric arm
-    (@($enum: ident, $exprs: expr; numeric ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    // match time related arm
+    (@($enum: ident, $exprs: expr; TimeRelated ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
+            @($enum, $exprs;
+            (
+                Time
+                | #[cfg(feature="time")] TimeDelta
+            )
+            ($e) => $body,
+            $($rest)*)
             $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
-            I32($e) => $body,
-            I64($e) => $body,
-            U64($e) => $body,
-            Usize($e) => $body,
-            OptUsize($e) => $body,
         )
     };
+
+    // match pure numeric arm (pure int + float)
+    (@($enum: ident, $exprs: expr; PureNumeric ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; (PureInt | Float)($e) => $body, $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match numeric( int + float ) arm
+    (@($enum: ident, $exprs: expr; Numeric ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; (Int | Float)($e) => $body, $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // expand | in macro (for example: (I32 | I64)(e))
+    (@($enum: ident, $exprs: expr; ($($(#[$meta: meta])? $arms: ident)|+)($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; $($(#[$meta])? $arms($e) => $body,)+ $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // expand | in macro (for example: I32(e) | I64(e))
+    (@($enum: ident, $exprs: expr; $(#[$meta: meta])? $arms: ident ($e: ident) $(| $(#[$other_meta: meta])? $other_arms: ident ($other_e: ident))+ => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; $(#[$meta])? $arms($e) => $body, $($(#[$other_meta])? $other_arms ($other_e) => $body,)* $($rest)*)
+            $($all_arms)*
+        )
+    };
+
 
     // match one arm, note that this rule should be the last one
     (@($enum: ident, $exprs: expr; $($(#[$meta: meta])? $arms: ident ($e: ident))|+ => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {

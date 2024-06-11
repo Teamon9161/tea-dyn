@@ -1,15 +1,15 @@
 use std::borrow::BorrowMut;
 
 use crate::prelude::*;
-use numpy::{
-    datetime::{units, Datetime},
-    PyArrayDyn,
-};
+#[cfg(feature = "time")]
+use numpy::datetime::{units, Datetime};
+use numpy::PyArrayDyn;
 use pyo3::{
     exceptions::PyValueError,
     prelude::*,
     types::{PyDict, PyList},
 };
+#[cfg(feature = "time")]
 use tevec::dtype::chrono::{DateTime as CrDateTime, Utc};
 
 #[derive(FromPyObject)]
@@ -34,10 +34,11 @@ impl<'py> FromPyObject<'py> for DynArray<'py> {
         if let Ok(mut pyarray) = ob.borrow_mut().extract::<PyArray<'py>>() {
             match_enum!(
                 PyArray, &mut pyarray;
-                Bool(arr) | F32(arr) | F64(arr) | I32(arr) | I64(arr) | Object(arr)
-                | #[cfg(feature = "time")] DateTimeMs(arr)
-                | #[cfg(feature = "time")] DateTimeUs(arr)
-                | #[cfg(feature = "time")] DateTimeNs(arr)
+                // Bool(arr) | F32(arr) | F64(arr) | I32(arr) | I64(arr) | Object(arr)
+                // | #[cfg(feature = "time")] DateTimeMs(arr)
+                // | #[cfg(feature = "time")] DateTimeUs(arr)
+                // | #[cfg(feature = "time")] DateTimeNs(arr)
+                (Float | I32 | I64 | Bool | Object | Time)(arr)
                 => {
                     if let Ok(mut arr) = arr.try_readwrite() {
                         let arb_arr: ArbArray<'_, _> = arr.as_array_mut().into();

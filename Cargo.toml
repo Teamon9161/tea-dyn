@@ -9,23 +9,26 @@ name = "tea_dyn"
 crate-type = ["cdylib"]
 
 [features]
-default = ["py", "ndarray", "map", "time"]
+default = ["py", "map", "time"]
 # types
-time = ["tevec/time", "pyo3/chrono"]
+time = ["tevec/time"]
 
 # backends
 pl = ["tevec/pl"]
 ndarray = ["tevec/ndarray"]
 
 # methods
-map = ["tevec/map"]
-agg = ["tevec/agg"]
-rolling = ["tevec/rolling"]
+map = ["tevec/map", "ndarray"]
+agg = ["tevec/agg", "ndarray"]
+rolling = ["tevec/rolling", "ndarray"]
 
 py = ["pyo3", "numpy"]
 
 [dependencies]
-pyo3 = { version = "0.21", optional = true, features = ["multiple-pymethods"] }
+pyo3 = { version = "0.21", optional = true, features = [
+    "multiple-pymethods",
+    "chrono",
+] }
 numpy = { version = "0.21", optional = true }
 derive_more = { version = "0.99", default-features = false, features = [
     "from",

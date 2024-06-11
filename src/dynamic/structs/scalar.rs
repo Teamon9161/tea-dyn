@@ -107,57 +107,51 @@ impl Scalar {
     #[inline]
     #[allow(clippy::should_implement_trait)]
     pub fn into_titer(self) -> TResult<DynTrustIter<'static>> {
-        match_scalar!(self; dynamic(v) => Ok(std::iter::once(v).into()),)
+        match_scalar!(self; Dynamic(v) => Ok(std::iter::once(v).into()),)
     }
 
     #[inline]
     pub fn cheap_clone(&self) -> Option<Self> {
         match_scalar!(
             self;
-            numeric(v) => Ok((*v).into()),
-            U8(v) => Ok((*v).into()),
-            Bool(v) => Ok((*v).into()),
+            (Normal | TimeRelated)(v) => Ok((*v).into()),
             String(v) => Ok(v.clone().into()),
-            #[cfg(feature = "time")] DateTimeMs(v) => Ok((*v).into()),
-            #[cfg(feature = "time")] DateTimeUs(v) => Ok((*v).into()),
-            #[cfg(feature = "time")] DateTimeNs(v) => Ok((*v).into()),
-            #[cfg(feature = "time")] TimeDelta(v) => Ok((*v).into()),
         )
         .ok()
     }
     #[inline]
     pub fn cast_i32(self) -> TResult<i32> {
-        match_scalar!(self; numeric(v) => Ok(v.cast()),)
+        match_scalar!(self; Numeric(v) => Ok(v.cast()),)
     }
 
     #[inline]
     pub fn cast_i64(self) -> TResult<i64> {
-        match_scalar!(self; numeric(v) => Ok(v.cast()),)
+        match_scalar!(self; Numeric(v) => Ok(v.cast()),)
     }
 
     #[inline]
     pub fn cast_f32(self) -> TResult<f32> {
-        match_scalar!(self; numeric(v) => Ok(v.cast()),)
+        match_scalar!(self; Numeric(v) => Ok(v.cast()),)
     }
 
     #[inline]
     pub fn cast_f64(self) -> TResult<f64> {
-        match_scalar!(self; numeric(v) => Ok(v.cast()),)
+        match_scalar!(self; Numeric(v) => Ok(v.cast()),)
     }
 
     #[inline]
     pub fn cast_bool(self) -> TResult<bool> {
-        match_scalar!(self; numeric(v) => Ok(v.cast()),)
+        match_scalar!(self; Numeric(v) => Ok(v.cast()),)
     }
 
     #[inline]
     pub fn cast_usize(self) -> TResult<usize> {
-        match_scalar!(self; numeric(v) => Ok(v.cast()),)
+        match_scalar!(self; Numeric(v) => Ok(v.cast()),)
     }
 
     #[inline]
     pub fn cast_optusize(self) -> TResult<Option<usize>> {
-        match_scalar!(self; numeric(v) => Ok(v.cast()),)
+        match_scalar!(self; Numeric(v) => Ok(v.cast()),)
     }
 }
 
@@ -168,7 +162,7 @@ macro_rules! impl_cast {
             impl Cast<$real> for Scalar {
                 #[inline]
                 fn cast(self) -> $real {
-                    match_scalar!(self; cast(v) => Ok(v.cast()),).unwrap()
+                    match_scalar!(self; Cast(v) => Ok(v.cast()),).unwrap()
                 }
             }
         )*
@@ -214,7 +208,7 @@ impl Cast<Vec<usize>> for Scalar {
     fn cast(self) -> Vec<usize> {
         match_scalar!(
             self;
-            cast(v) => {Ok(vec![v.cast()])},
+            Cast(v) => {Ok(vec![v.cast()])},
             VecUsize(v) => Ok(v.cast()),
         )
         .unwrap()

@@ -34,14 +34,14 @@ impl Dtype for NPDatetime<units::Nanoseconds> {
     }
 }
 
-#[derive(From)]
+#[derive(From, Debug)]
 pub enum ArbArray<'a, T> {
     Owned(ArrayD<T>),
     View(ArrayViewD<'a, T>),
     ViewMut(ArrayViewMutD<'a, T>),
 }
 
-#[derive(From, GetDtype)]
+#[derive(From, GetDtype, Debug)]
 pub enum DynArray<'a> {
     Bool(ArbArray<'a, bool>),
     F32(ArbArray<'a, f32>),
@@ -345,7 +345,7 @@ impl<'a, T: Clone> ArbArray<'a, T> {
 impl<'a> DynArray<'a> {
     #[inline]
     pub fn len(&self) -> usize {
-        match_array!(self; dynamic(v) => Ok(v.len()),).unwrap()
+        match_array!(self; Dynamic(v) => Ok(v.len()),).unwrap()
     }
 
     #[inline]
@@ -355,40 +355,40 @@ impl<'a> DynArray<'a> {
 
     #[inline]
     pub fn ndim(&self) -> usize {
-        match_array!(self; dynamic(v) => Ok(v.ndim()),).unwrap()
+        match_array!(self; Dynamic(v) => Ok(v.ndim()),).unwrap()
     }
 
     #[inline]
     #[allow(clippy::clone_on_copy)]
     pub fn get(&self, index: usize) -> TResult<Scalar> {
-        match_array!(self; dynamic(v) => v.get(index).map(|v| v.clone().into()),)
+        match_array!(self; Dynamic(v) => v.get(index).map(|v| v.clone().into()),)
     }
 
     #[inline]
     pub fn view(&self) -> DynArray<'_> {
-        match_array!(self; dynamic(v) => Ok(v.view().into()),).unwrap()
+        match_array!(self; Dynamic(v) => Ok(v.view().into()),).unwrap()
     }
 
     #[inline]
     pub fn into_vec(self) -> TResult<DynVec> {
-        match_array!(self; dynamic(v) => Ok(v.into_vec()?.into()),)
+        match_array!(self; Dynamic(v) => Ok(v.into_vec()?.into()),)
     }
 
     #[inline]
     pub fn from_vec(vec: DynVec) -> TResult<DynArray<'a>> {
-        match_vec!(vec; dynamic(v) => {
+        match_vec!(vec; Dynamic(v) => {
             Ok(Array1::from_vec(v).into_dyn().into())
         },)
     }
 
     #[inline]
     pub fn titer(&self) -> TResult<DynTrustIter> {
-        match_array!(self; dynamic(v) => Ok(v.titer()?.into()),)
+        match_array!(self; Dynamic(v) => Ok(v.titer()?.into()),)
     }
 
     #[inline]
     #[allow(clippy::should_implement_trait)]
     pub fn into_titer(self) -> TResult<DynTrustIter<'a>> {
-        match_array!(self; dynamic(v) => Ok(v.into_titer()?.into()),)
+        match_array!(self; Dynamic(v) => Ok(v.into_titer()?.into()),)
     }
 }

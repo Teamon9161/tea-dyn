@@ -47,7 +47,7 @@ impl<'a> DynTrustIter<'a> {
     #[inline]
     #[allow(unreachable_patterns)]
     pub fn collect_vec(self) -> TResult<DynVec> {
-        crate::match_trust_iter!(self; dynamic(i) => Ok(i.collect_trusted_to_vec().into()),)
+        crate::match_trust_iter!(self; Dynamic(i) => Ok(i.collect_trusted_to_vec().into()),)
     }
 }
 

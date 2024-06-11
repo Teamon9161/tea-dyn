@@ -117,7 +117,7 @@ macro_rules! d_vec {
 impl DynVec {
     #[inline]
     pub fn len(&self) -> usize {
-        match_vec!(self; dynamic(v) => Ok(v.len()),).unwrap()
+        match_vec!(self; Dynamic(v) => Ok(v.len()),).unwrap()
     }
 
     #[inline]
@@ -127,17 +127,17 @@ impl DynVec {
 
     #[inline]
     pub fn get(&self, index: usize) -> TResult<Scalar> {
-        match_vec!(self; dynamic(v) => v.get(index).map(|v| v.into()),)
+        match_vec!(self; Dynamic(v) => v.get(index).map(|v| v.into()),)
     }
 
     #[inline]
     pub fn titer(&self) -> TResult<DynTrustIter> {
-        match_vec!(self; dynamic(v) => Ok(v.titer().into()),)
+        match_vec!(self; Dynamic(v) => Ok(v.titer().into()),)
     }
 
     #[inline]
     #[allow(clippy::should_implement_trait)]
     pub fn into_titer(self) -> TResult<DynTrustIter<'static>> {
-        match_vec!(self; dynamic(v) => Ok(v.into_iter().into()),)
+        match_vec!(self; Dynamic(v) => Ok(v.into_iter().into()),)
     }
 }

@@ -156,7 +156,7 @@ impl<'a> Data<'a> {
         match self {
             Data::TrustIter(iter) => {
                 let iter = Arc::try_unwrap(iter).map_err(Data::TrustIter)?;
-                let out: Scalar = match_trust_iter!(iter; dynamic(i) => {
+                let out: Scalar = match_trust_iter!(iter; Dynamic(i) => {
                     let vec = i.collect_trusted_to_vec();
                     if vec.len() == 1 {
                         Ok(vec.into_iter().next().unwrap().into())

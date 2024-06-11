@@ -10,7 +10,7 @@ impl Expr {
                 Err(data) => {
                     match_array!(
                         data.into_array()?;
-                        pure_numeric(arr) => {
+                        PureNumeric(arr) => {
                             let arr: DynArray = arr.view().map(|a| a.abs()).into();
                             Ok(arr.into())
                         },
@@ -29,7 +29,7 @@ impl Expr {
                 Err(data) => {
                     match_array!(
                         data.into_array()?;
-                        numeric(arr) => {
+                        Numeric(arr) => {
                             let arr: DynArray = arr.view().map(|a| a.vabs()).into();
                             Ok(arr.into())
                         },
@@ -60,7 +60,7 @@ impl Expr {
                     Err(data) => {
                         match_array!(
                             data.into_array()?;
-                            dynamic(arr) => {
+                            Dynamic(arr) => {
                                 let arr: DynArray =
                                     arr.view()
                                     .calc_map_trust_iter_func(move |a| {
