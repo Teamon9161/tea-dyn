@@ -1,5 +1,7 @@
 use crate::prelude::*;
 use derive_more::{From, IsVariant};
+#[cfg(feature = "py")]
+use pyo3::prelude::Python;
 
 #[derive(From, Clone, IsVariant)]
 pub enum Data<'a> {
@@ -7,6 +9,8 @@ pub enum Data<'a> {
     Scalar(Arc<Scalar>),
     Vec(Arc<DynVec>),
     Array(Arc<DynArray<'a>>),
+    #[cfg(feature = "py")]
+    Object(Object),
 }
 
 impl<'a> From<DynTrustIter<'a>> for Data<'a> {
@@ -185,6 +189,8 @@ impl<'a> Data<'a> {
                     Err(array.into())
                 }
             }
+            #[cfg(feature = "py")]
+            Data::Object(obj) => Ok(Python::with_gil(|py| obj.extract::<Scalar>(py).unwrap())),
         }
     }
 
@@ -235,6 +241,7 @@ impl<'a> Data<'a> {
                     Err(array.into())
                 }
             }
+            Data::Object(obj) => Err(obj.into()),
         }
     }
 }

@@ -148,7 +148,8 @@ impl<'py> FromPyObject<'py> for Data<'py> {
         } else if let Ok(scalar) = obj.extract::<Scalar>() {
             Ok(scalar.into())
         } else {
-            todo!()
+            // can not convert to rust structs, just keep it as an object
+            Ok(Object(obj.into_py(obj.py())).into())
         }
     }
 }
