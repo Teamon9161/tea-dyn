@@ -20,17 +20,25 @@ pub enum PyArray<'py> {
     I32(&'py PyArrayDyn<i32>),
     I64(&'py PyArrayDyn<i64>),
     Object(&'py PyArrayDyn<Object>),
+    #[cfg(feature = "time")]
     DateTimeMs(&'py PyArrayDyn<Datetime<units::Milliseconds>>),
+    #[cfg(feature = "time")]
     DateTimeUs(&'py PyArrayDyn<Datetime<units::Microseconds>>),
+    #[cfg(feature = "time")]
     DateTimeNs(&'py PyArrayDyn<Datetime<units::Nanoseconds>>),
 }
 
 impl<'py> FromPyObject<'py> for DynArray<'py> {
+    #[allow(unreachable_patterns)]
     fn extract_bound(mut ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         if let Ok(mut pyarray) = ob.borrow_mut().extract::<PyArray<'py>>() {
             match_enum!(
                 PyArray, &mut pyarray;
-                Bool(arr) | F32(arr) | F64(arr) | I32(arr) | I64(arr) => {
+                Bool(arr) | F32(arr) | F64(arr) | I32(arr) | I64(arr) | Object(arr)
+                | #[cfg(feature = "time")] DateTimeMs(arr)
+                | #[cfg(feature = "time")] DateTimeUs(arr)
+                | #[cfg(feature = "time")] DateTimeNs(arr)
+                => {
                     if let Ok(mut arr) = arr.try_readwrite() {
                         let arb_arr: ArbArray<'_, _> = arr.as_array_mut().into();
                         // safety: this is only safe when python side keeps the array alive
@@ -48,10 +56,7 @@ impl<'py> FromPyObject<'py> for DynArray<'py> {
                         Ok(arb_arr.into())
                     }
                 },
-                #[cfg(feature = "time")] DateTimeMs(_arr) => {
-                    // let arr = arr.try_readonly()?.as_array();
-                    todo!()
-                },
+                // Object(arr) =>
             )
             .map_err(|e| PyValueError::new_err(e.to_string()))
         } else {
@@ -136,8 +141,12 @@ impl<'a> FromPyObject<'a> for Scalar {
 
 impl<'py> FromPyObject<'py> for Data<'py> {
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
-        if let Ok(vec) = obj.extract::<DynVec>() {
+        if let Ok(arr) = obj.extract::<DynArray>() {
+            Ok(arr.into())
+        } else if let Ok(vec) = obj.extract::<DynVec>() {
             Ok(vec.into())
+        } else if let Ok(scalar) = obj.extract::<Scalar>() {
+            Ok(scalar.into())
         } else {
             todo!()
         }

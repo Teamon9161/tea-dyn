@@ -11,7 +11,7 @@ use tea_macros::GetDtype;
 use tevec::ndarray::prelude::*;
 
 #[cfg(all(feature = "py", feature = "time"))]
-unsafe impl Dtype for NPDatetime<units::Milliseconds> {
+impl Dtype for NPDatetime<units::Milliseconds> {
     #[inline]
     fn type_() -> DataType {
         DataType::DateTime(TimeUnit::Millisecond)
@@ -19,7 +19,7 @@ unsafe impl Dtype for NPDatetime<units::Milliseconds> {
 }
 
 #[cfg(all(feature = "py", feature = "time"))]
-unsafe impl Dtype for NPDatetime<units::Microseconds> {
+impl Dtype for NPDatetime<units::Microseconds> {
     #[inline]
     fn type_() -> DataType {
         DataType::DateTime(TimeUnit::Microsecond)
@@ -27,7 +27,7 @@ unsafe impl Dtype for NPDatetime<units::Microseconds> {
 }
 
 #[cfg(all(feature = "py", feature = "time"))]
-unsafe impl Dtype for NPDatetime<units::Nanoseconds> {
+impl Dtype for NPDatetime<units::Nanoseconds> {
     #[inline]
     fn type_() -> DataType {
         DataType::DateTime(TimeUnit::Nanosecond)
@@ -64,6 +64,36 @@ pub enum DynArray<'a> {
     DateTimeNs(ArbArray<'a, DateTime<unit::Nanosecond>>),
     #[cfg(feature = "time")]
     TimeDelta(ArbArray<'a, TimeDelta>),
+}
+
+#[cfg(all(feature = "py", feature = "time"))]
+impl<'a> From<ArbArray<'a, NPDatetime<units::Milliseconds>>> for DynArray<'a> {
+    #[inline]
+    fn from(a: ArbArray<'a, NPDatetime<units::Milliseconds>>) -> Self {
+        // safety: datetime and npdatetime has the same size
+        let a: ArbArray<'a, DateTime<unit::Millisecond>> = unsafe { a.into_dtype() };
+        DynArray::DateTimeMs(a)
+    }
+}
+
+#[cfg(all(feature = "py", feature = "time"))]
+impl<'a> From<ArbArray<'a, NPDatetime<units::Microseconds>>> for DynArray<'a> {
+    #[inline]
+    fn from(a: ArbArray<'a, NPDatetime<units::Microseconds>>) -> Self {
+        // safety: datetime and npdatetime has the same size
+        let a: ArbArray<'a, DateTime<unit::Microsecond>> = unsafe { a.into_dtype() };
+        DynArray::DateTimeUs(a)
+    }
+}
+
+#[cfg(all(feature = "py", feature = "time"))]
+impl<'a> From<ArbArray<'a, NPDatetime<units::Nanoseconds>>> for DynArray<'a> {
+    #[inline]
+    fn from(a: ArbArray<'a, NPDatetime<units::Nanoseconds>>) -> Self {
+        // safety: datetime and npdatetime has the same size
+        let a: ArbArray<'a, DateTime<unit::Nanosecond>> = unsafe { a.into_dtype() };
+        DynArray::DateTimeNs(a)
+    }
 }
 
 impl<'a, T, U: 'a> TransmuteDtype<U> for ArbArray<'a, T> {

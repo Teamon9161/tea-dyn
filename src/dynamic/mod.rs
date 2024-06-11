@@ -18,18 +18,14 @@ pub trait GetDtype {
 }
 
 /// A wrapper trait for GetDataType of tevec
-/// # Safety
-///
-/// Any type implement this trait must ensure that the type has the same size as
-/// the type which DataType represents
-pub unsafe trait Dtype {
+pub trait Dtype {
     fn type_() -> DataType;
 }
 
 macro_rules! impl_dtype {
     ($($ty: ty),*) => {
         $(
-            unsafe impl Dtype for $ty{
+            impl Dtype for $ty{
                 #[inline]
                 fn type_() -> DataType {
                     <$ty>::dtype()
