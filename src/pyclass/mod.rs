@@ -72,7 +72,7 @@ impl PyExpr {
         let out = self
             .0
             .eval(&ctx, backend)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+            .map_err(|e| PyValueError::new_err(format!("{}", e)))?;
         Ok(out.into_py(py))
     }
 }

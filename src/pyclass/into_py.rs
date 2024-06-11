@@ -11,6 +11,16 @@ impl IntoPy<PyObject> for DynVec {
     }
 }
 
+// impl IntoPy<PyObject> for DynArray {
+//     fn into_py(self, py: Python) -> PyObject {
+//         match_array!(self;
+//             normal(arr) => Ok(arr.into_py(py)),
+//             Object(arr) => Ok(unsafe{TransmuteDtype::<PyObject>::into_dtype(arr)}.into_py(py)),
+//         )
+//         .unwrap()
+//     }
+// }
+
 impl<'py> IntoPy<PyObject> for Data<'py> {
     fn into_py(self, py: Python) -> PyObject {
         match self {

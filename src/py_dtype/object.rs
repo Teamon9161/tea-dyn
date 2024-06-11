@@ -61,13 +61,6 @@ impl PartialEq for Object {
     }
 }
 
-#[cfg(feature = "serde")]
-impl Serialize for Object {
-    fn serialize<S: Serializer>(&self, _serializer: S) -> Result<S::Ok, S::Error> {
-        unimplemented!("can not serialize PyObject")
-    }
-}
-
 impl ToPyObject for Object {
     #[inline(always)]
     fn to_object(&self, py: Python<'_>) -> PyObject {

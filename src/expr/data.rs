@@ -7,8 +7,6 @@ pub enum Data<'a> {
     Scalar(Arc<Scalar>),
     Vec(Arc<DynVec>),
     Array(Arc<DynArray<'a>>),
-    // #[cfg(feature = "py")]
-    // Object(Object),
 }
 
 impl<'a> From<DynTrustIter<'a>> for Data<'a> {
@@ -96,7 +94,7 @@ impl<'a> Data<'a> {
         if self.is_trust_iter() {
             // this function only works for trust iter
             match backend {
-                Backend::Numpy | Backend::Pandas => self.into_array().map(|a| a.into()),
+                Backend::Numpy | Backend::Pandas => self.into_array().map(|v| v.into()),
                 Backend::Vec => self.into_vec().map(|v| v.into()),
             }
         } else {
