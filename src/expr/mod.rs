@@ -1,12 +1,12 @@
 mod context;
 mod data;
-mod expr;
+mod expr_core;
 mod methods;
 mod node;
 
 pub use context::{Backend, Context};
 pub use data::Data;
-pub use expr::{lit, s, Expr};
+pub use expr_core::{lit, s, Expr};
 pub use node::{BaseNode, CtxNode, LitNode, Node, SelectNode};
 
 #[cfg(test)]

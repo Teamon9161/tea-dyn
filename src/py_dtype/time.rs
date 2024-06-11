@@ -18,13 +18,12 @@ where
 impl<U: TimeUnitTrait> Cast<DateTime<U>> for Object
 where
     DateTime<U>: TryFrom<CrDateTime<Utc>> + From<CrDateTime<Utc>>,
-    <DateTime<U> as TryFrom<CrDateTime<Utc>>>::Error: std::fmt::Debug,
 {
     #[inline]
     fn cast(self) -> DateTime<U> {
         Python::with_gil(|py| {
             if let Ok(v) = self.extract::<CrDateTime<Utc>>(py) {
-                v.try_into().unwrap()
+                v.into()
             } else if let Ok(s) = self.extract::<&str>(py) {
                 DateTime::parse(s, None).unwrap_or_default()
             } else {

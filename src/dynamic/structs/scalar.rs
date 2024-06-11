@@ -37,7 +37,7 @@ macro_rules! impl_from {
                     if let Scalar::$arm(v) = self {
                         Ok(v)
                     } else {
-                        tbail!("Scalar is not of type {:?}", <$ty>::dtype())
+                        tbail!("Scalar is not of type {:?}", <$ty>::type_())
                     }
             })*
         }
@@ -197,6 +197,8 @@ impl_cast!(
 #[cfg(feature = "time")]
 impl<U: TimeUnitTrait> Cast<DateTime<U>> for Scalar {
     #[inline]
+    #[allow(clippy::useless_conversion)]
+    /// we have special implemention for cast to same unit, so just ignore clippy::useless_conversion here
     fn cast(self) -> DateTime<U> {
         match_scalar!(
             self;

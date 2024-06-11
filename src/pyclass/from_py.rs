@@ -124,7 +124,7 @@ impl<'a> FromPyObject<'a> for Scalar {
             #[cfg(feature = "time")]
             {
                 if let Ok(v) = obj.extract::<CrDateTime<Utc>>() {
-                    let v: DateTime = v.try_into().unwrap();
+                    let v: DateTime = v.into();
                     return Ok(v.into());
                 }
                 // TODO: ability to extract timedelta from python sid

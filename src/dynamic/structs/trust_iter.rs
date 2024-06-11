@@ -61,7 +61,7 @@ macro_rules! impl_from {
                     if let DynTrustIter::$arm(v) = self {
                         Ok(v)
                     } else {
-                        tbail!("TrustIter is not of type {:?}", <$ty>::dtype())
+                        tbail!("TrustIter is not of type {:?}", <$ty>::type_())
                     }
             })*
         }

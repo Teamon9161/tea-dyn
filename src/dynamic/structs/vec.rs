@@ -49,7 +49,7 @@ macro_rules! impl_from {
                     if let DynVec::$arm(v) = self {
                         Ok(v)
                     } else {
-                        tbail!("Vector is not of type {:?}", <$ty>::dtype())
+                        tbail!("Vector is not of type {:?}", <$ty>::type_())
                     }
             })*
         }
