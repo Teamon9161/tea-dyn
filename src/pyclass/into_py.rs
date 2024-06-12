@@ -22,7 +22,6 @@ impl IntoPy<PyObject> for Scalar {
     #[inline]
     fn into_py(self, py: Python) -> PyObject {
         // TODO: support TimeDelta
-        // dbg!("{:?}", &self);
         match_scalar!(self;
             (Normal | String | VecUsize)(s) => Ok(s.into_py(py)),
             Time(dt) => Ok(dt.to_cr().unwrap().into_py(py)),
