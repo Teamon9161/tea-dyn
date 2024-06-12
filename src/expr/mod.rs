@@ -18,15 +18,26 @@ mod tests {
     #[cfg(feature = "map")]
     fn test_basic() -> TResult<()> {
         let ctx = Context {
-            data: vec![d_vec![-1.0, 2.0, -3.0].into(), dt_iter![2.].into()],
+            data: vec![
+                d_vec![-1.0, 2.0, -3.0].into(),
+                dt_iter![2.].into(),
+                scalar!("hello".to_owned()).into(),
+            ],
             backend: None,
         };
-        let expr = s(0).abs().abs();
-        let res = expr.eval(&ctx, Some(Backend::Vec))?.into_vec()?.f64()?;
+        // vec is still shared by context, so we will failed
+        assert!(ctx.data[0].clone().into_vec().is_err());
+        let res = s(0)
+            .vabs()
+            .abs()
+            .eval(&ctx, Some(Backend::Vec))?
+            .into_vec()?
+            .f64()?;
         assert_eq!(res, &[1.0, 2.0, 3.0]);
-        let expr = s(1).abs().abs();
+        let res = s(2).eval(&ctx, None)?.into_scalar()?.string()?;
+        assert_eq!(res.as_str(), "hello");
         // we cannot change context, so it should fail if the data is an iterator
-        assert!(expr.eval(&ctx, None).is_err());
+        assert!(s(1).abs().vabs().eval(&ctx, None).is_err());
         Ok(())
     }
 

@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "tea_dyn"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["py", "map", "time"]
+# default = ["map", "time"]
 # types
 time = ["tevec/time"]
 
@@ -27,7 +28,9 @@ py = ["pyo3", "numpy"]
 [dependencies]
 pyo3 = { version = "0.21", optional = true, features = [
     "multiple-pymethods",
+    "abi3-py38",
     "chrono",
+    "nightly",
 ] }
 numpy = { version = "0.21", optional = true }
 derive_more = { version = "0.99", default-features = false, features = [

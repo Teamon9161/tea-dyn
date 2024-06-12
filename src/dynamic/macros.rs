@@ -28,28 +28,6 @@ macro_rules! match_enum {
         )
     };
 
-    // // match castable arm
-    // (@($enum: ident, $exprs: expr; DtypeCast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
-    //     $crate::match_enum!(
-    //         @($enum, $exprs;
-    //             Normal
-    //         $($rest)*)
-    //         $($all_arms)*
-    //         // F32($e) => $body,
-    //         // F64($e) => $body,
-    //         // I32($e) => $body,
-    //         // I64($e) => $body,
-    //         // U8($e) => $body,
-    //         // U64($e) => $body,
-    //         // Bool($e) => $body,
-    //         // Usize($e) => $body,
-    //         // String($e) => $body,
-    //         // OptUsize($e) => $body,
-    //         #[cfg(feature="py")] Object($e) => $body,
-    //         #[cfg(feature="time")] DateTime($e) => $body,
-    //         #[cfg(feature="time")] TimeDelta($e) => $body,
-    //     )
-    // };
 
     // match dynamic & castable arm
     (@($enum: ident, $exprs: expr; Cast ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
@@ -58,45 +36,9 @@ macro_rules! match_enum {
                 (Normal | String | #[cfg(feature="py")] Object | #[cfg(feature="time")] TimeDelta)($e) => $body,
             $($rest)*)
             $($all_arms)*
-            // F32($e) => $body,
-            // F64($e) => $body,
-            // I32($e) => $body,
-            // I64($e) => $body,
-            // U8($e) => $body,
-            // U64($e) => $body,
-            // Bool($e) => $body,
-            // Usize($e) => $body,
-            // String($e) => $body,
-            // OptUsize($e) => $body,
-            // #[cfg(feature="py")] Object($e) => $body,
-            // // #[cfg(feature="time")] DateTimeMs($e) => $body,
-            // // #[cfg(feature="time")] DateTimeUs($e) => $body,
-            // // #[cfg(feature="time")] DateTimeNs($e) => $body,
-            // #[cfg(feature="time")] TimeDelta($e) => $body,
         )
     };
 
-    // // match non-reference dtype(no str)
-    // (@($enum: ident, $exprs: expr; own ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
-    //     $crate::match_enum!(
-    //         @($enum, $exprs; $($rest)*)
-    //         $($all_arms)*
-    //         F32($e) => $body,
-    //         F64($e) => $body,
-    //         I32($e) => $body,
-    //         I64($e) => $body,
-    //         U8($e) => $body,
-    //         U64($e) => $body,
-    //         Bool($e) => $body,
-    //         Usize($e) => $body,
-    //         String($e) => $body,
-    //         OptUsize($e) => $body,
-    //         VecUsize($e) => $body,
-    //         #[cfg(feature="py")] Object($e) => $body,
-    //         #[cfg(feature="time")] DateTime($e) => $body,
-    //         #[cfg(feature="time")] TimeDelta($e) => $body,
-    //     )
-    // };
 
     // match normal dtype, no str, object, time, vecusize
     (@($enum: ident, $exprs: expr; Normal ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
@@ -110,26 +52,30 @@ macro_rules! match_enum {
     (@($enum: ident, $exprs: expr; Dynamic ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs;
-                (Normal | String | VecUsize | TimeRelated)($e) => $body,
+                (IntoPy | TimeRelated)($e) => $body,
             $($rest)*)
             $($all_arms)*
-            // F32($e) => $body,
-            // F64($e) => $body,
-            // I32($e) => $body,
-            // I64($e) => $body,
-            // U8($e) => $body,
-            // U64($e) => $body,
-            // Bool($e) => $body,
-            // Usize($e) => $body,
-            // String($e) => $body,
-            // OptUsize($e) => $body,
-            // VecUsize($e) => $body,
-            // #[cfg(feature="py")] Object($e) => $body,
-            // // #[cfg(feature="time")] DateTime($e) => $body,
-            // #[cfg(feature="time")] DateTimeMs($e) => $body,
-            // #[cfg(feature="time")] DateTimeUs($e) => $body,
-            // #[cfg(feature="time")] DateTimeNs($e) => $body,
-            // #[cfg(feature="time")] TimeDelta($e) => $body,
+        )
+    };
+
+    // match dtype that support IntoPy(currently timelike doesn't support)
+    (@($enum: ident, $exprs: expr; IntoPy ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (AsRefPy | #[cfg(feature = "py")] Object)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match dtype that support AsRef Py(currently timelike doesn't support)
+    (@($enum: ident, $exprs: expr; AsRefPy ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        // TODO: should support str type
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (Normal | String | VecUsize)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
         )
     };
 

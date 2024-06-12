@@ -39,6 +39,7 @@ impl SelectNode {
         };
         tensure!(idx >= 0, "negative index is out of bounds");
         let idx = idx as usize;
+        // implicitly clone Data, that is ref count of Arc in Data is increased
         let data = ctx.data.get(idx)?;
         Ok(data)
     }

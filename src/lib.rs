@@ -16,7 +16,7 @@ pub use tevec::ndarray;
 
 #[cfg(feature = "py")]
 #[pymodule]
-fn _lowlevel(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _rust_dyn(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     use pyclass::*;
     m.add_class::<PyExpr>()?;
     m.add_function(wrap_pyfunction!(py_lit, m)?)?;

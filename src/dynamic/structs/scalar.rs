@@ -1,8 +1,9 @@
 #![allow(unreachable_patterns)]
 use crate::prelude::*;
+use derive_more::From;
 use tea_macros::GetDtype;
 
-#[derive(GetDtype, Debug, Clone)]
+#[derive(GetDtype, From, Debug, Clone)]
 pub enum Scalar {
     Bool(bool),
     F32(f32),
@@ -42,22 +43,23 @@ macro_rules! impl_from {
             })*
         }
 
-        impl<T: GetDataType> From<T> for Scalar {
-            #[allow(unreachable_patterns)]
-            #[inline]
-            fn from(v: T) -> Self {
-                match T::dtype() {
-                    $(
-                        $(#[$meta])? DataType::$dtype $(($inner))? => {
-                            // safety: we have checked the type
-                            let v: $ty = unsafe{std::mem::transmute_copy(&v)};
-                            Scalar::$arm(v.into())
-                        },
-                    )*
-                    type_ => unimplemented!("Create Scalar from type {:?} is not implemented", type_),
-                }
-            }
-        }
+        // impl<T: GetDataType> From<T> for Scalar {
+        //     #[allow(unreachable_patterns)]
+        //     #[inline]
+        //     fn from(v: T) -> Self {
+        //         match T::dtype() {
+        //             $(
+        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
+        //                     // safety: we have checked the type
+        //                     // let v: $ty = unsafe{std::mem::transmute_copy(&v)};
+        //                     let v: $ty = unsafe{std::mem::transmute(v)};
+        //                     Scalar::$arm(v.into())
+        //                 },
+        //             )*
+        //             type_ => unimplemented!("Create Scalar from type {:?} is not implemented", type_),
+        //         }
+        //     }
+        // }
     };
 }
 
@@ -115,7 +117,7 @@ impl Scalar {
         match_scalar!(
             self;
             (Normal | TimeRelated)(v) => Ok((*v).into()),
-            String(v) => Ok(v.clone().into()),
+            (String | #[cfg(feature = "py")] Object)(v) => Ok(v.clone().into()),
         )
         .ok()
     }
@@ -213,6 +215,15 @@ impl Cast<Vec<usize>> for Scalar {
         )
         .unwrap()
     }
+}
+
+#[macro_export]
+/// create scalar
+macro_rules! scalar {
+    ($e: expr) => {{
+        let s: $crate::prelude::Scalar = $e.into();
+        s
+    }};
 }
 
 #[cfg(test)]

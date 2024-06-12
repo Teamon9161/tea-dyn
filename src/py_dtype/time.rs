@@ -1,8 +1,4 @@
 use crate::prelude::*;
-// use numpy::{
-//     datetime::{Datetime as NPDatetime, Unit as NPUnit},
-//     npyffi::NPY_DATETIMEUNIT,
-// };
 use pyo3::prelude::*;
 
 impl<U: TimeUnitTrait> Cast<Object> for DateTime<U>
@@ -24,8 +20,8 @@ where
         Python::with_gil(|py| {
             if let Ok(v) = self.extract::<CrDateTime<Utc>>(py) {
                 v.into()
-            } else if let Ok(s) = self.extract::<&str>(py) {
-                DateTime::parse(s, None).unwrap_or_default()
+            } else if let Ok(s) = self.extract::<std::borrow::Cow<'_, str>>(py) {
+                DateTime::parse(s.as_ref(), None).unwrap_or_default()
             } else {
                 DateTime::nat()
             }
@@ -52,8 +48,8 @@ impl Cast<TimeDelta> for Object {
                     months: 0,
                     inner: v,
                 }
-            } else if let Ok(s) = self.extract::<&str>(py) {
-                TimeDelta::parse(s).unwrap_or_default()
+            } else if let Ok(s) = self.extract::<std::borrow::Cow<'_, str>>(py) {
+                TimeDelta::parse(s.as_ref()).unwrap_or_default()
             } else {
                 TimeDelta::nat()
             }

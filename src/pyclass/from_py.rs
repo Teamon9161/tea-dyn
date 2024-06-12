@@ -1,4 +1,4 @@
-use std::borrow::BorrowMut;
+use std::borrow::{BorrowMut, Cow};
 
 use crate::prelude::*;
 #[cfg(feature = "time")]
@@ -34,10 +34,6 @@ impl<'py> FromPyObject<'py> for DynArray<'py> {
         if let Ok(mut pyarray) = ob.borrow_mut().extract::<PyArray<'py>>() {
             match_enum!(
                 PyArray, &mut pyarray;
-                // Bool(arr) | F32(arr) | F64(arr) | I32(arr) | I64(arr) | Object(arr)
-                // | #[cfg(feature = "time")] DateTimeMs(arr)
-                // | #[cfg(feature = "time")] DateTimeUs(arr)
-                // | #[cfg(feature = "time")] DateTimeNs(arr)
                 (Float | I32 | I64 | Bool | Object | Time)(arr)
                 => {
                     if let Ok(mut arr) = arr.try_readwrite() {
@@ -71,8 +67,8 @@ impl<'py> FromPyObject<'py> for DynArray<'py> {
 
 impl<'py> FromPyObject<'py> for Backend {
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
-        if let Ok(s) = obj.extract::<&str>() {
-            match s {
+        if let Ok(s) = obj.extract::<Cow<'_, str>>() {
+            match s.as_ref() {
                 "pandas" | "pd" => Ok(Backend::Pandas),
                 "numpy" | "np" => Ok(Backend::Numpy),
                 "vec" | "list" => Ok(Backend::Vec),

@@ -22,5 +22,5 @@ dev-dependencies = [
 
 [tool.maturin]
 python-source = "python"
-module-name = "tea_dyn._lowlevel"
+module-name = "tea_dyn._rust_dyn"
 features = ["pyo3/extension-module"]
