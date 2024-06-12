@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use derive_more::{From, IsVariant};
 
-#[derive(From, Clone, IsVariant)]
+#[derive(From, Clone, Debug, IsVariant)]
 pub enum Data<'a> {
     TrustIter(Arc<DynTrustIter<'a>>),
     Scalar(Arc<Scalar>),

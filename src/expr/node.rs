@@ -6,7 +6,6 @@ pub enum Node {
     Lit(LitNode),
     Select(SelectNode),
     Base(BaseNode),
-    // Base2(Base2Node),
     Context(CtxNode),
 }
 
@@ -27,28 +26,20 @@ impl LitNode {
 
 #[derive(Clone)]
 pub struct SelectNode {
-    pub idx: i32,
+    pub symbol: Symbol,
 }
 
 impl SelectNode {
+    #[inline]
     pub fn select<'b>(&self, ctx: &Context<'b>) -> TResult<Data<'b>> {
-        let idx = if self.idx < 0 {
-            ctx.len() as i32 + self.idx
-        } else {
-            self.idx
-        };
-        tensure!(idx >= 0, "negative index is out of bounds");
-        let idx = idx as usize;
-        // implicitly clone Data, that is ref count of Arc in Data is increased
-        let data = ctx.data.get(idx)?;
-        Ok(data)
+        ctx.get(self.symbol.clone()).cloned()
     }
 }
 
-impl From<i32> for SelectNode {
+impl<T: Into<Symbol>> From<T> for SelectNode {
     #[inline]
-    fn from(idx: i32) -> Self {
-        Self { idx }
+    fn from(sym: T) -> Self {
+        Self { symbol: sym.into() }
     }
 }
 

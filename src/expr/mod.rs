@@ -4,7 +4,7 @@ mod expr_core;
 mod methods;
 mod node;
 
-pub use context::{Backend, Context};
+pub use context::{Backend, Context, Symbol};
 pub use data::Data;
 pub use expr_core::{lit, s, Expr};
 pub use node::{BaseNode, CtxNode, LitNode, Node, SelectNode};
@@ -24,6 +24,7 @@ mod tests {
                 scalar!("hello".to_owned()).into(),
             ],
             backend: None,
+            col_map: None,
         };
         // vec is still shared by context, so we will failed
         assert!(ctx.data[0].clone().into_vec().is_err());
@@ -38,6 +39,20 @@ mod tests {
         assert_eq!(res.as_str(), "hello");
         // we cannot change context, so it should fail if the data is an iterator
         assert!(s(1).abs().vabs().eval(&ctx, None).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_select_by_str() -> TResult<()> {
+        let ctx = Context::new_from_data_column(
+            vec![
+                d_vec![-1.0, 2.0, -3.0].into(),
+                dt_iter![2.].into(),
+                scalar!("hello".to_owned()).into(),
+            ],
+            ["a", "b", "c"],
+        );
+        assert!(s("c").eval(&ctx, None)?.into_scalar()?.string()?.as_str() == "hello");
         Ok(())
     }
 

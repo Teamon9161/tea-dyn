@@ -1,4 +1,4 @@
-#![feature(more_qualified_paths)]
+// #![feature(more_qualified_paths)]
 
 mod dynamic;
 mod expr;

@@ -40,6 +40,13 @@ pub enum DynTrustIter<'a> {
     TimeDelta(TvIter<'a, TimeDelta>),
 }
 
+impl<'a> std::fmt::Debug for DynTrustIter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let dtype = self.dtype();
+        write!(f, "DynTrustIter({:?})", dtype)
+    }
+}
+
 unsafe impl Send for DynTrustIter<'_> {}
 unsafe impl Sync for DynTrustIter<'_> {}
 

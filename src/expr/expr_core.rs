@@ -10,8 +10,8 @@ unsafe impl Send for Expr {}
 unsafe impl Sync for Expr {}
 
 #[inline]
-pub fn s(idx: i32) -> Expr {
-    let node = Node::Select(idx.into());
+pub fn s<S: Into<Symbol>>(symbol: S) -> Expr {
+    let node: SelectNode = Into::<SelectNode>::into(symbol);
     Expr::new(node)
 }
 

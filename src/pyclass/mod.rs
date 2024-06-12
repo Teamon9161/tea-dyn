@@ -44,7 +44,7 @@ pub fn py_lit(v: Bound<'_, PyAny>) -> PyResult<PyExpr> {
 
 #[pyfunction(name = "s")]
 pub fn py_s(i: Bound<'_, PyAny>) -> PyResult<PyExpr> {
-    let i: i32 = i.extract()?;
+    let i: Symbol = i.extract()?;
     Ok(s(i).into())
 }
 
