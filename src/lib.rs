@@ -9,9 +9,6 @@ use pyo3::prelude::*;
 
 pub mod prelude;
 
-#[cfg(feature = "py")]
-pub use pyclass::{FromPyAny, PyAnyExt};
-
 #[cfg(feature = "ndarray")]
 pub use tevec::ndarray;
 

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 from numpy.testing import assert_array_equal
 from tea_dyn import s
 
@@ -40,8 +41,6 @@ def test_expr_for_ndarray():
 
 
 def test_pd_backend():
-    import pandas as pd
-
     df = pd.DataFrame({"a": [1, 2, 3], "b": [4, -5, 6]})
     assert_array_equal(s("a").eval(df), np.array([1, 2, 3]))
     assert_array_equal(s(1).abs().eval(df), np.array([4, 5, 6]))
