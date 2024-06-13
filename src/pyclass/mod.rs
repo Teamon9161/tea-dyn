@@ -5,6 +5,8 @@ mod from_py;
 mod into_py;
 mod methods;
 
+pub use from_py::{FromPyAny, PyAnyExt};
+
 // #[pyclass(name = "Context")]
 // pub struct PyContext(Context<'static>);
 

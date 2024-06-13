@@ -1,7 +1,10 @@
-use std::{
-    borrow::{BorrowMut, Cow},
-    collections::HashMap,
-};
+mod from_py_any;
+mod py_any_ext;
+
+pub use from_py_any::FromPyAny;
+pub use py_any_ext::PyAnyExt;
+
+use std::{borrow::Cow, collections::HashMap};
 
 use crate::prelude::*;
 #[cfg(feature = "time")]
@@ -33,8 +36,10 @@ pub enum PyArray<'py> {
 
 impl<'py> FromPyObject<'py> for DynArray<'py> {
     #[allow(unreachable_patterns)]
-    fn extract_bound(mut ob: &Bound<'py, PyAny>) -> PyResult<Self> {
-        if let Ok(mut pyarray) = ob.borrow_mut().extract::<PyArray<'py>>() {
+    fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        if obj.get_type().qualname()? == "Series" && obj.module()?.name() == "pandas" {
+            Self::extract_bound(&obj.getattr("values")?)
+        } else if let Ok(mut pyarray) = obj.extract::<PyArray<'py>>() {
             match_enum!(
                 PyArray, &mut pyarray;
                 (Float | I32 | I64 | Bool | Object | Time)(arr)
@@ -62,22 +67,22 @@ impl<'py> FromPyObject<'py> for DynArray<'py> {
         } else {
             Err(PyValueError::new_err(format!(
                 "can not convert {:?} to DynArray",
-                ob
+                obj
             )))
         }
     }
 }
 
 impl<'py> FromPyObject<'py> for Symbol {
-    fn extract(ob: &PyAny) -> PyResult<Self> {
+    fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         if let Ok(i) = ob.extract::<i32>() {
             Ok(Symbol::I32(i))
         } else if let Ok(i) = ob.extract::<usize>() {
             Ok(Symbol::Usize(i))
         } else if let Ok(s) = ob.extract::<Cow<'_, str>>() {
             match s {
-                Cow::Owned(s) => Ok(Symbol::String(s)),
-                Cow::Borrowed(s) => Ok(Symbol::String(s.to_owned())),
+                Cow::Owned(s) => Ok(s.into()),
+                Cow::Borrowed(s) => Ok(s.to_owned().into()),
             }
         } else {
             Err(PyValueError::new_err(format!(
@@ -248,14 +253,7 @@ impl<'py> Context<'py> {
 
     fn from_pandas(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         if obj.get_type().qualname()? == "DataFrame" {
-            let module_name = obj.getattr("__module__")?;
-            if module_name
-                .extract::<Cow<'_, str>>()?
-                .split('.')
-                .next()
-                .unwrap()
-                != "pandas"
-            {
+            if obj.module()?.name() != "pandas" {
                 return Err(PyValueError::new_err("not a pandas DataFrame"));
             }
             let columns = obj.getattr("columns")?;
