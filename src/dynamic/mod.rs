@@ -45,6 +45,11 @@ impl_dtype!(
     u64,
     usize,
     String,
+    Option<bool>,
+    Option<f32>,
+    Option<f64>,
+    Option<i32>,
+    Option<i64>,
     Option<usize>,
     Vec<usize>
 );

@@ -26,6 +26,11 @@ pub enum DynTrustIter<'a> {
     U64(TvIter<'a, u64>),
     Usize(TvIter<'a, usize>),
     String(TvIter<'a, String>),
+    OptBool(TvIter<'a, Option<bool>>),
+    OptF32(TvIter<'a, Option<f32>>),
+    OptF64(TvIter<'a, Option<f64>>),
+    OptI32(TvIter<'a, Option<i32>>),
+    OptI64(TvIter<'a, Option<i64>>),
     OptUsize(TvIter<'a, Option<usize>>),
     VecUsize(TvIter<'a, Vec<usize>>),
     #[cfg(feature = "py")]
@@ -102,6 +107,11 @@ impl_from!(
     (U64, U64, u64, u64),
     (Usize, Usize, usize, usize),
     (String, String, String, string),
+    (OptBool, OptBool, Option<bool>, opt_bool),
+    (OptF32, OptF32, Option<f32>, opt_f32),
+    (OptF64, OptF64, Option<f64>, opt_f64),
+    (OptI32, OptI32, Option<i32>, opt_i32),
+    (OptI64, OptI64, Option<i64>, opt_i64),
     (OptUsize, OptUsize, Option<usize>, opt_usize),
     (VecUsize, VecUsize, Vec<usize>, vec_usize),
     #[cfg(feature = "py")]

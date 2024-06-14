@@ -11,3 +11,6 @@ pub use crate::{match_arb, match_array};
 pub use super::py_dtype::*;
 #[cfg(feature = "py")]
 pub use super::pyclass::{FromPyAny, PyAnyExt, PyExpr};
+
+#[cfg(feature = "pl")]
+pub use tevec::polars;

@@ -9,13 +9,13 @@ name = "tea_dyn"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["py", "map", "time"]
+default = ["py", "map", "time", "pl"]
 # default = ["map", "time"]
 # types
 time = ["tevec/time"]
 
 # backends
-pl = ["tevec/pl"]
+pl = ["tevec/pl", "pyo3-polars"]
 ndarray = ["tevec/ndarray"]
 
 # methods
@@ -32,7 +32,9 @@ pyo3 = { version = "0.21", optional = true, features = [
     "chrono",
     "nightly",
 ] }
-numpy = { version = "0.21", optional = true }
+numpy = { version = "0.21.0", optional = true }
+polars = { version = "0.40", optional = true, default-features = false }
+pyo3-polars = { version = "0.14", optional = true, default-features = false }
 derive_more = { version = "0.99", default-features = false, features = [
     "from",
     "display",

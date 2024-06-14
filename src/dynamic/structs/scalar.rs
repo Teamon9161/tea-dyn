@@ -1,6 +1,8 @@
 #![allow(unreachable_patterns)]
 use crate::prelude::*;
 use derive_more::From;
+#[cfg(feature = "pl")]
+use polars::prelude::AnyValue;
 use tea_macros::GetDtype;
 
 #[derive(GetDtype, From, Debug, Clone)]
@@ -14,6 +16,11 @@ pub enum Scalar {
     U64(u64),
     Usize(usize),
     String(String),
+    OptBool(Option<bool>),
+    OptI32(Option<i32>),
+    OptI64(Option<i64>),
+    OptF32(Option<f32>),
+    OptF64(Option<f64>),
     OptUsize(Option<usize>),
     VecUsize(Vec<usize>),
     #[cfg(feature = "py")]
@@ -26,6 +33,18 @@ pub enum Scalar {
     DateTimeNs(DateTime<unit::Nanosecond>),
     #[cfg(feature = "time")]
     TimeDelta(TimeDelta),
+}
+
+impl<'a> TryFrom<AnyValue<'a>> for Scalar {
+    type Error = TError;
+    fn try_from(value: AnyValue<'a>) -> TResult<Self> {
+        match_enum!(AnyValue, value;
+            (Boolean | UInt8 | UInt64 | Int32 | Int64 | Float32 | Float64)(v) => Ok(v.into()),
+            String(v) => Ok(v.to_string().into()),
+            // TODO: implement object, datetime, use smart string in Scalar?
+            // StringOwned(s) => Ok(s.into()),
+        )
+    }
 }
 
 macro_rules! impl_from {
@@ -73,6 +92,11 @@ impl_from!(
     (U64, U64, u64, u64),
     (Usize, Usize, usize, usize),
     (String, String, String, string),
+    (OptBool, OptBool, Option<bool>, opt_bool),
+    (OptF32, OptF32, Option<f32>, opt_f32),
+    (OptF64, OptF64, Option<f64>, opt_f64),
+    (OptI32, OptI32, Option<i32>, opt_i32),
+    (OptI64, OptI64, Option<i64>, opt_i64),
     (OptUsize, OptUsize, Option<usize>, opt_usize),
     (VecUsize, VecUsize, Vec<usize>, vec_usize),
     #[cfg(feature = "py")]
@@ -181,6 +205,11 @@ impl_cast!(
     u64,
     usize,
     String,
+    Option<bool>,
+    Option<f32>,
+    Option<f64>,
+    Option<i32>,
+    Option<i64>,
     Option<usize>,
     #[cfg(feature = "py")]
     Object,

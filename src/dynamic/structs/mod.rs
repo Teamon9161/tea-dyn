@@ -1,12 +1,16 @@
 #[cfg(feature = "ndarray")]
 mod array;
 mod scalar;
+#[cfg(feature = "pl")]
+mod series;
 mod trust_iter;
 mod vec;
 
 #[cfg(feature = "ndarray")]
 pub use array::{ArbArray, DynArray, NdArrayExt};
 pub use scalar::Scalar;
+#[cfg(feature = "pl")]
+pub use series::SeriesExt;
 pub use trust_iter::{DynTrustIter, TvIter};
 pub use vec::DynVec;
 

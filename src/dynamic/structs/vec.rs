@@ -25,6 +25,11 @@ pub enum DynVec {
     U64(Vec<u64>),
     Usize(Vec<usize>),
     String(Vec<String>),
+    OptBool(Vec<Option<bool>>),
+    OptF32(Vec<Option<f32>>),
+    OptF64(Vec<Option<f64>>),
+    OptI32(Vec<Option<i32>>),
+    OptI64(Vec<Option<i64>>),
     OptUsize(Vec<Option<usize>>),
     VecUsize(Vec<Vec<usize>>),
     #[cfg(feature = "py")]
@@ -82,6 +87,11 @@ impl_from!(
     (U64, U64, u64, u64),
     (Usize, Usize, usize, usize),
     (String, String, String, string),
+    (OptBool, OptBool, Option<bool>, opt_bool),
+    (OptF32, OptF32, Option<f32>, opt_f32),
+    (OptF64, OptF64, Option<f64>, opt_f64),
+    (OptI32, OptI32, Option<i32>, opt_i32),
+    (OptI64, OptI64, Option<i64>, opt_i64),
     (OptUsize, OptUsize, Option<usize>, opt_usize),
     (VecUsize, VecUsize, Vec<usize>, vec_usize),
     #[cfg(feature = "py")]

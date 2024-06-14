@@ -93,7 +93,7 @@ macro_rules! match_enum {
     (@($enum: ident, $exprs: expr; Int ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs;
-                (PureInt | OptUsize)($e) => $body,
+                (PureInt | OptUsize | OptI32 | OptI64)($e) => $body,
             $($rest)*)
             $($all_arms)*
         )

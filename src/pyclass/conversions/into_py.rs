@@ -1,6 +1,8 @@
 use crate::prelude::*;
 use numpy::{Element, PyArray};
 use pyo3::{exceptions::PyValueError, prelude::*, types::PyList};
+#[cfg(feature = "pl")]
+use pyo3_polars::PySeries;
 
 #[cfg(feature = "time")]
 use numpy::datetime::{units, Datetime as NPDatetime};
@@ -132,6 +134,8 @@ impl<'py> Data<'py> {
                 let array = DynArray::from_vec(vec).unwrap();
                 array.try_into_py(py, container)
             }
+            #[cfg(feature = "pl")]
+            Data::Series(series) => Ok(PySeries(series).into_py(py)),
         }
     }
 }

@@ -1,5 +1,7 @@
 use crate::prelude::*;
 use derive_more::{From, IsVariant};
+#[cfg(feature = "pl")]
+use polars::prelude::Series;
 
 #[derive(From, Clone, Debug, IsVariant)]
 pub enum Data<'a> {
@@ -7,6 +9,8 @@ pub enum Data<'a> {
     Scalar(Arc<Scalar>),
     Vec(Arc<DynVec>),
     Array(Arc<DynArray<'a>>),
+    #[cfg(feature = "pl")]
+    Series(Series),
 }
 
 impl<'a> From<DynTrustIter<'a>> for Data<'a> {
@@ -185,6 +189,17 @@ impl<'a> Data<'a> {
                     Err(array.into())
                 }
             }
+            #[cfg(feature = "pl")]
+            Data::Series(s) => {
+                if s.len() == 1 {
+                    Ok(s.get(0)
+                        .unwrap()
+                        .try_into()
+                        .expect("can not convert polars anyvalue to scalar"))
+                } else {
+                    Err(Data::Series(s))
+                }
+            }
         }
     }
 
@@ -234,6 +249,10 @@ impl<'a> Data<'a> {
                 } else {
                     Err(array.into())
                 }
+            }
+            #[cfg(feature = "pl")]
+            Data::Series(_s) => {
+                todo!()
             }
         }
     }
