@@ -150,4 +150,14 @@ impl DynVec {
     pub fn into_titer(self) -> TResult<DynTrustIter<'static>> {
         match_vec!(self; Dynamic(v) => Ok(v.into_iter().into()),)
     }
+
+    #[inline]
+    #[cfg(feature = "ndarray")]
+    pub fn into_array<'a>(self) -> TResult<DynArray<'a>> {
+        use tevec::ndarray::Array1;
+        match_vec!(self; Dynamic(v) => {
+            let arr = Array1::from_vec(v).into_dyn();
+            Ok(arr.into())
+        },)
+    }
 }

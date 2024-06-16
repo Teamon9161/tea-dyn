@@ -6,10 +6,11 @@ use std::{borrow::Cow, collections::HashMap};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Backend {
-    Pandas,
-    // Polars,
-    Numpy,
     Vec,
+    Numpy,
+    Pandas,
+    #[cfg(feature = "pl")]
+    Polars,
 }
 
 /// Symbol is used to select data from context

@@ -8,6 +8,11 @@ impl Expr {
             func: Arc::new(|data| match data.try_into_iter() {
                 Ok(iter) => Ok(iter.abs()?.into()),
                 Err(data) => {
+                    // TODO: should respect backend of data, or have a way to specify backend?
+                    // this is needed because polars array will always fail in try_into_iter
+                    if let Ok(iter) = data.try_titer() {
+                        return Ok(iter.abs()?.collect_vec()?.into());
+                    }
                     match_array!(
                         data.into_array()?;
                         PureNumeric(arr) => {

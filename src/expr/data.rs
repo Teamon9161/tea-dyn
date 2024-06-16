@@ -79,6 +79,28 @@ impl From<Scalar> for Data<'_> {
 
 impl<'a> Data<'a> {
     #[inline]
+    pub fn backend(&self) -> Backend {
+        match self {
+            Data::TrustIter(_) | Data::Scalar(_) | Data::Vec(_) => Backend::Vec,
+            Data::Array(_) => Backend::Numpy,
+            #[cfg(feature = "pl")]
+            Data::Series(_) => Backend::Polars,
+        }
+    }
+
+    #[inline]
+    /// if output of the expression is a trust iter, consume and convert it to a result
+    pub fn into_result(self, backend: Option<Backend>) -> TResult<Self> {
+        if let Data::TrustIter(iter) = self {
+            // this function only works for trust iter
+            let backend = backend.unwrap_or(Backend::Numpy);
+            Arc::try_unwrap(iter).unwrap().collect(backend)
+        } else {
+            Ok(self)
+        }
+    }
+
+    #[inline]
     pub fn into_scalar(self) -> TResult<Scalar> {
         self.try_into_scalar()
             .map_err(|_| terr!("Data cannot be converted into scalar"))
@@ -86,24 +108,9 @@ impl<'a> Data<'a> {
 
     #[inline]
     #[allow(clippy::should_implement_trait)]
-    pub fn into_iter(self) -> TResult<DynTrustIter<'a>> {
+    pub fn into_titer(self) -> TResult<DynTrustIter<'a>> {
         self.try_into_iter()
             .map_err(|_| terr!("Data cannot be converted into iterator"))
-    }
-
-    #[inline]
-    /// if output of the expression is a trust iter, consume and convert it to a result
-    pub fn into_result(self, backend: Option<Backend>) -> TResult<Self> {
-        let backend = backend.unwrap_or(Backend::Numpy);
-        if self.is_trust_iter() {
-            // this function only works for trust iter
-            match backend {
-                Backend::Numpy | Backend::Pandas => self.into_array().map(|v| v.into()),
-                Backend::Vec => self.into_vec().map(|v| v.into()),
-            }
-        } else {
-            Ok(self)
-        }
     }
 
     #[inline]
@@ -124,6 +131,17 @@ impl<'a> Data<'a> {
                 .into_vec()
                 .map_err(|_| terr!("Can not convert data to an array"))?;
             DynArray::from_vec(vec)
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "pl")]
+    #[allow(clippy::missing_transmute_annotations)]
+    pub fn into_series(self) -> TResult<Series> {
+        match self {
+            Data::Series(series) => Ok(series),
+            Data::TrustIter(iter) => Arc::try_unwrap(iter).unwrap().collect_series(),
+            _ => tbail!("Can not convert data to series, not implemented yet"),
         }
     }
 
@@ -203,6 +221,8 @@ impl<'a> Data<'a> {
         }
     }
 
+    /// try consume the data and convert it into an iterator
+    /// note that consume polars series and turn it into an iterator is not supported
     pub fn try_into_iter(self) -> Result<DynTrustIter<'a>, Self> {
         match self {
             Data::TrustIter(iter) => Arc::try_unwrap(iter).map_err(|iter| iter.into()),
@@ -239,7 +259,7 @@ impl<'a> Data<'a> {
                         Ok(array) => Ok(array.into_titer().unwrap()),
                         Err(array) => {
                             // the data is still shared
-                            // this should only happen when the data is stored in a context
+                            // this case should only happen when the data is stored in a context
                             // so it is safe to reference data
                             let iter: DynTrustIter<'a> =
                                 unsafe { std::mem::transmute(array.titer().unwrap()) };
@@ -251,9 +271,28 @@ impl<'a> Data<'a> {
                 }
             }
             #[cfg(feature = "pl")]
-            Data::Series(_s) => {
-                todo!()
+            Data::Series(s) => Err(Data::Series(s)),
+        }
+    }
+
+    /// try get an iterator from the data, but we cannn't create an iterator if
+    /// data is a TrustIter
+    pub fn try_titer(&self) -> TResult<DynTrustIter> {
+        match self {
+            Data::TrustIter(_iter) => {
+                // if let Some(iter) = Arc::get_mut(iter) {
+                //     let iter = std::mem::take(iter);
+                //     Ok(iter)
+                // } else {
+                //     tbail!("Can not iterate over a reference of iterator")
+                // }
+                tbail!("Can not iterate over a reference of iterator")
             }
+            Data::Vec(vec) => vec.titer(),
+            Data::Scalar(scalar) => scalar.titer(),
+            Data::Array(array) => array.titer(),
+            #[cfg(feature = "pl")]
+            Data::Series(s) => s.titer(),
         }
     }
 }

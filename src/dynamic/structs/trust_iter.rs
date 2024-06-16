@@ -1,5 +1,7 @@
 use crate::prelude::*;
 use tea_macros::GetDtype;
+#[cfg(feature = "pl")]
+use tevec::polars::prelude::{ChunkedArray, IntoSeries, Series};
 
 impl<'a, T, U> TransmuteDtype<U> for Box<dyn TrustedLen<Item = T> + 'a> {
     type Output = Box<dyn TrustedLen<Item = U> + 'a>;
@@ -45,6 +47,13 @@ pub enum DynTrustIter<'a> {
     TimeDelta(TvIter<'a, TimeDelta>),
 }
 
+impl<'a> Default for DynTrustIter<'a> {
+    #[inline]
+    fn default() -> Self {
+        DynTrustIter::Bool(Box::new(std::iter::empty().to_trust(0)))
+    }
+}
+
 impl<'a> std::fmt::Debug for DynTrustIter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let dtype = self.dtype();
@@ -60,6 +69,51 @@ impl<'a> DynTrustIter<'a> {
     #[allow(unreachable_patterns)]
     pub fn collect_vec(self) -> TResult<DynVec> {
         crate::match_trust_iter!(self; Dynamic(i) => Ok(i.collect_trusted_to_vec().into()),)
+    }
+
+    #[inline]
+    #[allow(unreachable_patterns)]
+    pub fn collect_array<'b>(self) -> TResult<DynArray<'b>> {
+        self.collect_vec()?.into_array()
+    }
+
+    #[inline]
+    #[cfg(feature = "pl")]
+    pub fn collect_series(self) -> TResult<Series> {
+        use tevec::polars::datatypes::*;
+        crate::match_trust_iter!(
+            self;
+            OptBool(i) => {
+                let arr: ChunkedArray<BooleanType> = i.collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            OptF32(i) => {
+                let arr: ChunkedArray<Float32Type> = i.collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            OptF64(i) => {
+                let arr: ChunkedArray<Float64Type> = i.collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            OptI32(i) => {
+                let arr: ChunkedArray<Int32Type> = i.collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            OptI64(i) => {
+                let arr: ChunkedArray<Int64Type> = i.collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+        )
+    }
+
+    #[inline]
+    pub fn collect<'b>(self, backend: Backend) -> TResult<Data<'b>> {
+        match backend {
+            Backend::Vec => self.collect_vec().map(|o| o.into()),
+            Backend::Numpy | Backend::Pandas => self.collect_array().map(Into::into),
+            #[cfg(feature = "pl")]
+            Backend::Polars => self.collect_series().map(Into::into),
+        }
     }
 }
 
