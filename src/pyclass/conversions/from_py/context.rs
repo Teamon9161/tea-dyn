@@ -62,10 +62,9 @@ impl<'py> Context<'py> {
             }
             let columns = obj.getattr("columns")?;
             let len = columns.len()?;
-            let col_map =
-                create_col_map_from_pyiter(&PyIterator::from_bound_object(&columns)?, Some(len))?;
+            let col_map = create_col_map_from_pyiter(&columns.iter()?, Some(len))?;
             let mut data = Vec::with_capacity(len);
-            for col in PyIterator::from_bound_object(&columns)? {
+            for col in columns.iter()? {
                 let value = obj.get_item(col?)?.getattr("values")?;
                 data.push(value.extract::<Data<'py>>()?)
             }
@@ -78,11 +77,48 @@ impl<'py> Context<'py> {
             Err(PyValueError::new_err("not a pandas DataFrame"))
         }
     }
+
+    #[cfg(feature = "pl")]
+    fn from_polars(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        use pyo3_polars::PySeries;
+        if obj.get_type().qualname()? == "DataFrame" {
+            if obj.module()?.name() != "polars" {
+                return Err(PyValueError::new_err("not a polars DataFrame"));
+            }
+            let series = obj.call_method0("get_columns")?;
+            let len = obj.getattr("width")?.extract::<usize>()?;
+            let mut data = Vec::with_capacity(len);
+            let mut col_map = HashMap::with_capacity(len * 2);
+            for (i, pyseries) in series.iter()?.enumerate() {
+                let pyseries = pyseries?;
+                let col = pyseries.getattr("name")?;
+                let s = pyseries.extract::<PySeries>()?.0;
+                data.push(Data::Series(s.into()));
+                // safety: expression will only be evaluated when py context is alive
+                let col = unsafe {
+                    std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(
+                        col.extract::<Cow<'_, str>>()?,
+                    )
+                };
+                col_map.insert(col, i);
+            }
+            Ok(Context {
+                data,
+                backend: Some(Backend::Polars),
+                col_map: Some(col_map),
+            })
+        } else {
+            Err(PyValueError::new_err("not a polars DataFrame"))
+        }
+    }
 }
 
 impl<'py> FromPyObject<'py> for Context<'py> {
     fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
-        // Ok(Context::from_pandas(ob).unwrap())
+        #[cfg(feature = "pl")]
+        if let Ok(ctx) = Context::from_polars(ob) {
+            return Ok(ctx);
+        }
         if let Ok(ctx) = Context::from_pandas(ob) {
             Ok(ctx)
         } else if let Ok(ctx) = Context::from_dict(ob) {

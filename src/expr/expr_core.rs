@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 #[derive(Clone, Default)]
 pub struct Expr {
-    pub name: Option<Arc<String>>,
+    pub name: Option<Arc<str>>,
     pub nodes: Vec<Node>,
 }
 
@@ -26,20 +26,33 @@ pub fn lit<V: Into<Scalar>>(v: V) -> Expr {
 impl Expr {
     #[inline]
     pub fn new<N: Into<Node>>(node: N) -> Self {
-        Expr {
+        let expr = Expr {
             name: None,
-            nodes: vec![node.into()],
-        }
+            nodes: vec![],
+        };
+        expr.chain(node)
+    }
+
+    #[inline]
+    pub fn rename(&mut self, name: &str) -> &mut Self {
+        self.name = Some(Arc::from(name));
+        self
     }
 
     #[inline]
     pub fn alias(mut self, name: &str) -> Self {
-        self.name = Some(Arc::new(name.to_string()));
+        self.rename(name);
         self
     }
 
     #[inline]
     pub fn chain<N: Into<Node>>(mut self, node: N) -> Self {
+        let node = node.into();
+        if let Node::Select(n) = &node {
+            if let Some(name) = n.name() {
+                self.rename(name);
+            }
+        }
         self.nodes.push(node.into());
         self
     }
@@ -91,6 +104,8 @@ impl Expr {
         } else {
             backend
         };
-        func(ctx, backend)?.into_result(backend)
+        Ok(func(ctx, backend)?
+            .into_result(backend)?
+            .alias(self.name.as_ref().map(AsRef::as_ref)))
     }
 }

@@ -42,7 +42,8 @@ impl<'py> FromPyObject<'py> for Backend {
                 "pandas" | "pd" => Ok(Backend::Pandas),
                 "numpy" | "np" => Ok(Backend::Numpy),
                 "vec" | "list" => Ok(Backend::Vec),
-                // "polars" | "pl" => Ok(Backend::Polars),
+                #[cfg(feature = "pl")]
+                "polars" | "pl" => Ok(Backend::Polars),
                 _ => Err(PyValueError::new_err(format!(
                     "can not convert {:?} to Backend",
                     s

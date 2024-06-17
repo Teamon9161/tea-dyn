@@ -2,7 +2,7 @@ use tevec::prelude::{tbail, tensure, terr, TResult};
 
 use super::data::Data;
 use derive_more::From;
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum Backend {
@@ -19,14 +19,23 @@ pub enum Backend {
 pub enum Symbol {
     I32(i32),
     Usize(usize),
-    Str(Cow<'static, str>),
-    // Str(&'static str),
-    // String(String),
+    Str(Arc<str>),
 }
 
-impl From<&'static str> for Symbol {
+impl Symbol {
     #[inline]
-    fn from(value: &'static str) -> Self {
+    pub fn name(&self) -> Option<&str> {
+        if let Symbol::Str(name) = self {
+            Some(name)
+        } else {
+            None
+        }
+    }
+}
+
+impl From<&str> for Symbol {
+    #[inline]
+    fn from(value: &str) -> Self {
         Symbol::Str(value.into())
     }
 }

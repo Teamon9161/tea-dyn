@@ -5,7 +5,9 @@ description = "Add your description here"
 authors = [{ name = "teamon9161", email = "1127972945@qq.com" }]
 readme = "README.md"
 requires-python = ">= 3.8"
-dependencies = []
+dependencies = [
+    "pyarrow>=16.1.0",
+]
 
 [build-system]
 requires = ["maturin>=1.2,<2.0"]
@@ -21,6 +23,7 @@ dev-dependencies = [
     "numpy>=1.26.4",
     "pandas>=2.2.2",
     "pytest>=8.2.2",
+    "polars>=0.20.31",
 ]
 
 [tool.maturin]

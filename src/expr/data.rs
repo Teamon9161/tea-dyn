@@ -89,6 +89,18 @@ impl<'a> Data<'a> {
     }
 
     #[inline]
+    pub fn alias(self, name: Option<&str>) -> Self {
+        // currently only Series has name
+        #[cfg(feature = "pl")]
+        if let Some(name) = name {
+            if let Data::Series(series) = self {
+                return Data::Series(series.with_name(name));
+            }
+        }
+        self
+    }
+
+    #[inline]
     /// if output of the expression is a trust iter, consume and convert it to a result
     pub fn into_result(self, backend: Option<Backend>) -> TResult<Self> {
         if let Data::TrustIter(iter) = self {

@@ -34,6 +34,11 @@ impl SelectNode {
     pub fn select<'b>(&self, ctx: &Context<'b>) -> TResult<Data<'b>> {
         ctx.get(self.symbol.clone()).cloned()
     }
+
+    #[inline]
+    pub fn name(&self) -> Option<&str> {
+        self.symbol.name()
+    }
 }
 
 impl<T: Into<Symbol>> From<T> for SelectNode {

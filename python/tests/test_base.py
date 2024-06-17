@@ -45,3 +45,16 @@ def test_pd_backend():
     assert_array_equal(s("a").eval(df), np.array([1, 2, 3]))
     assert_array_equal(s(1).abs().eval(df), np.array([4, 5, 6]))
     assert s("b").shift(1, 0).eval(df, backend="list") == [0, 4, -5]
+
+
+def test_pl_backend():
+    import polars as pl
+    from polars.testing import assert_series_equal
+    df = pl.DataFrame(
+        {
+            "a": [1., 2., 3.],
+            "b": [4., -5., 6.],
+        }
+    )
+    assert_series_equal(s("a").eval(df), pl.Series("a", [1., 2., 3.]))
+    assert_series_equal(s("b").abs().shift(1).eval(df), pl.Series("b", [None, 4., 5.]))
