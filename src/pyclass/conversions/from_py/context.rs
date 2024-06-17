@@ -93,7 +93,7 @@ impl<'py> Context<'py> {
                 let pyseries = pyseries?;
                 let col = pyseries.getattr("name")?;
                 let s = pyseries.extract::<PySeries>()?.0;
-                data.push(Data::Series(s.into()));
+                data.push(Data::Series(s));
                 // safety: expression will only be evaluated when py context is alive
                 let col = unsafe {
                     std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(

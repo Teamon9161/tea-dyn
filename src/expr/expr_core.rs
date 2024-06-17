@@ -53,7 +53,7 @@ impl Expr {
                 self.rename(name);
             }
         }
-        self.nodes.push(node.into());
+        self.nodes.push(node);
         self
     }
 
