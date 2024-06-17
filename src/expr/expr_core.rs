@@ -44,9 +44,13 @@ impl Expr {
         self
     }
 
-    pub fn to_func<'a, 'b, 'c>(&'a self) -> Box<dyn Fn(&'c Context<'b>) -> TResult<Data<'b>> + 'a> {
-        let func = |ctx| {
+    pub fn to_func<'a, 'b, 'c>(
+        &'a self,
+    ) -> Box<dyn Fn(&'c Context<'b>, Option<Backend>) -> TResult<Data<'b>> + 'a> {
+        let func = |ctx, backend: Option<Backend>| {
             let mut data: Option<Data<'b>> = None;
+            let backend = backend.unwrap_or_default();
+            // backend is the same for all nodes
             for node in &self.nodes {
                 match node {
                     Node::Select(n) => {
@@ -56,15 +60,16 @@ impl Expr {
                         data = Some(n.eval()?);
                     }
                     Node::Base(n) => {
-                        data =
-                            Some((n.func)(data.ok_or_else(|| {
-                                terr!("Should select something to map as first")
-                            })?)?);
+                        data = Some((n.func)(
+                            data.ok_or_else(|| terr!("Should select something to map as first"))?,
+                            backend,
+                        )?);
                     }
                     Node::Context(n) => {
                         data = Some((n.func)(
                             data.ok_or_else(|| terr!("Should select something to map as first"))?,
                             ctx,
+                            backend,
                         )?);
                     }
                 }
@@ -86,6 +91,6 @@ impl Expr {
         } else {
             backend
         };
-        func(ctx)?.into_result(backend)
+        func(ctx, backend)?.into_result(backend)
     }
 }

@@ -44,21 +44,16 @@ impl<T: Into<Symbol>> From<T> for SelectNode {
 }
 
 #[derive(Clone)]
+#[allow(clippy::type_complexity)]
 pub struct BaseNode {
     pub name: &'static str,
-    pub func: Arc<dyn Fn(Data) -> TResult<Data>>,
+    pub func: Arc<dyn Fn(Data, Backend) -> TResult<Data>>,
 }
-
-// #[derive(Clone)]
-// pub struct Base2Node {
-//     pub name: &'static str,
-//     pub func: Arc<dyn for<'a> Fn(Data<'a>, Data<'a>) -> TResult<Data<'a>>>,
-// }
 
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
 // the node also require context to execute other expressions
 pub struct CtxNode {
     pub name: &'static str,
-    pub func: Arc<dyn for<'a> Fn(Data<'a>, &Context) -> TResult<Data<'a>>>,
+    pub func: Arc<dyn for<'a> Fn(Data<'a>, &Context, Backend) -> TResult<Data<'a>>>,
 }

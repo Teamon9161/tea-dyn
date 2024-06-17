@@ -4,8 +4,9 @@ use super::data::Data;
 use derive_more::From;
 use std::{borrow::Cow, collections::HashMap};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum Backend {
+    #[default]
     Vec,
     Numpy,
     Pandas,

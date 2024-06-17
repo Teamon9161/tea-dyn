@@ -103,7 +103,7 @@ macro_rules! match_enum {
     (@($enum: ident, $exprs: expr; BoolLike ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs;
-                (Bool | U8)($e) => $body,
+                (Bool | U8 | OptBool)($e) => $body,
             $($rest)*)
             $($all_arms)*
         )
@@ -112,10 +112,16 @@ macro_rules! match_enum {
     // match float like arm
     (@($enum: ident, $exprs: expr; Float ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; $($rest)*)
+            @($enum, $exprs; (PureFloat | OptF32 | OptF64)($e) => $body, $($rest)*)
             $($all_arms)*
-            F32($e) => $body,
-            F64($e) => $body,
+        )
+    };
+
+    // match float like arm
+    (@($enum: ident, $exprs: expr; PureFloat ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; (F32 | F64)($e) => $body, $($rest)*)
+            $($all_arms)*
         )
     };
 
@@ -151,7 +157,7 @@ macro_rules! match_enum {
     // match pure numeric arm (pure int + float)
     (@($enum: ident, $exprs: expr; PureNumeric ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; (PureInt | Float)($e) => $body, $($rest)*)
+            @($enum, $exprs; (PureInt | PureFloat)($e) => $body, $($rest)*)
             $($all_arms)*
         )
     };

@@ -29,7 +29,7 @@ impl<'py> FromPyObject<'py> for DynArray<'py> {
         } else if let Ok(mut pyarray) = obj.extract::<PyArray<'py>>() {
             match_enum!(
                 PyArray, &mut pyarray;
-                (Float | I32 | I64 | Bool | Object | Time)(arr)
+                (PureFloat | I32 | I64 | Bool | Object | Time)(arr)
                 => {
                     if let Ok(mut arr) = arr.try_readwrite() {
                         let arb_arr: ArbArray<'_, _> = arr.as_array_mut().into();
