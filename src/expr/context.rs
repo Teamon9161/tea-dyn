@@ -2,7 +2,7 @@ use tevec::prelude::{tbail, tensure, terr, TResult};
 
 use super::data::Data;
 use derive_more::From;
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum Backend {
@@ -52,7 +52,7 @@ impl From<String> for Symbol {
 pub struct Context<'a> {
     pub data: Vec<Data<'a>>,
     pub backend: Option<Backend>,
-    pub col_map: Option<HashMap<Cow<'a, str>, usize>>,
+    pub col_map: Option<HashMap<Arc<str>, usize>>,
 }
 
 impl<'a> Context<'a> {
@@ -66,7 +66,7 @@ impl<'a> Context<'a> {
     }
 
     #[inline]
-    pub fn new_from_data_column<C: IntoIterator<Item = T>, T: Into<Cow<'a, str>>>(
+    pub fn new_from_data_column<C: IntoIterator<Item = T>, T: Into<Arc<str>>>(
         data: Vec<Data<'a>>,
         columns: C,
     ) -> Self

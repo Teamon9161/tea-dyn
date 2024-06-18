@@ -3,34 +3,30 @@ use crate::expr::{Backend, Context, Data};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyIterator, PyList};
-use std::borrow::Cow;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 fn create_col_map_from_pyiter<'py>(
     columns: &Bound<'py, PyIterator>,
     len: Option<usize>,
-) -> PyResult<HashMap<Cow<'py, str>, usize>> {
+) -> PyResult<HashMap<Arc<str>, usize>> {
     let len = len.unwrap_or_else(|| columns.len().unwrap());
     let mut col_map = HashMap::with_capacity(len * 2);
     for (i, col) in columns.into_iter().enumerate() {
         let col = col?;
-        let col = col.extract::<Cow<'_, str>>()?;
-        // safety: expression will only be evaluated when py context is alive
-        let col = unsafe { std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(col) };
-        col_map.insert(col, i);
+        let col = col.as_str()?;
+        col_map.insert(Arc::from(col), i);
     }
     Ok(col_map)
 }
 
-fn create_col_map_from_pylist<'a>(
-    columns: &'a Bound<'_, PyList>,
-) -> PyResult<HashMap<&'a str, usize>> {
+fn create_col_map_from_pylist<'py>(
+    columns: &Bound<'py, PyList>,
+) -> PyResult<HashMap<Arc<str>, usize>> {
     let mut col_map = HashMap::with_capacity(columns.len() * 2);
     for (i, col) in columns.iter().enumerate() {
         let col = col.as_str()?;
-        // safety: expression will only be evaluated when py context is alive
-        // let col = unsafe { std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(col) };
-        col_map.insert(col, i);
+        col_map.insert(Arc::from(col), i);
     }
     Ok(col_map)
 }
@@ -95,12 +91,12 @@ impl<'py> Context<'py> {
                 let s = pyseries.extract::<PySeries>()?.0;
                 data.push(Data::Series(s));
                 // safety: expression will only be evaluated when py context is alive
-                let col = unsafe {
-                    std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(
-                        col.extract::<Cow<'_, str>>()?,
-                    )
-                };
-                col_map.insert(col, i);
+                // let col = unsafe {
+                //     std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(
+                //         col.extract::<Cow<'_, str>>()?,
+                //     )
+                // };
+                col_map.insert(Arc::from(col.as_str()?), i);
             }
             Ok(Context {
                 data,
