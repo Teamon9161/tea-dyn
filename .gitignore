@@ -1,15 +1,20 @@
 # python generated files
-__pycache__/
-*.py[oc]
+*.py[ocd]
 build/
 dist/
 wheels/
 *.egg-info
-*.pyd
+
 # Rust
 target/
+
+# cache
+__pycache__/
+.pytest_cache/
+.ruff_cache/
 
 # venv
 .venv
 
+# lock
 *.lock
