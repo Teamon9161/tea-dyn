@@ -22,14 +22,14 @@ fn create_col_map_from_pyiter<'py>(
     Ok(col_map)
 }
 
-fn create_col_map_from_pylist<'py>(
-    columns: &Bound<'py, PyList>,
-) -> PyResult<HashMap<Cow<'py, str>, usize>> {
+fn create_col_map_from_pylist<'a>(
+    columns: &'a Bound<'_, PyList>,
+) -> PyResult<HashMap<&'a str, usize>> {
     let mut col_map = HashMap::with_capacity(columns.len() * 2);
-    for (i, col) in columns.into_iter().enumerate() {
-        let col = col.extract::<Cow<'_, str>>()?;
+    for (i, col) in columns.iter().enumerate() {
+        let col = col.as_str()?;
         // safety: expression will only be evaluated when py context is alive
-        let col = unsafe { std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(col) };
+        // let col = unsafe { std::mem::transmute::<Cow<'_, str>, Cow<'py, str>>(col) };
         col_map.insert(col, i);
     }
     Ok(col_map)
