@@ -13,6 +13,13 @@ pub enum Data<'a> {
     Series(Series),
 }
 
+impl Default for Data<'_> {
+    #[inline]
+    fn default() -> Self {
+        Data::Vec(Arc::new(DynVec::default()))
+    }
+}
+
 impl<'a> From<DynTrustIter<'a>> for Data<'a> {
     #[inline]
     fn from(iter: DynTrustIter<'a>) -> Self {

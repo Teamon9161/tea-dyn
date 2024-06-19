@@ -197,3 +197,19 @@ macro_rules! dt_iter {
         }
     };
 }
+
+pub trait TrustIterCast<'a>: TrustedLen + 'a {
+    fn cast_to<T2: 'a>(self) -> impl TrustedLen<Item = T2> + 'a
+    where
+        Self::Item: Cast<T2> + 'a;
+}
+
+impl<'a, I: TrustedLen<Item = T> + 'a, T> TrustIterCast<'a> for I {
+    #[inline]
+    fn cast_to<T2: 'a>(self) -> impl TrustedLen<Item = T2> + 'a
+    where
+        T: Cast<T2> + 'a,
+    {
+        self.map(Cast::cast)
+    }
+}

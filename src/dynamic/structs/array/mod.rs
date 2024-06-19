@@ -1,4 +1,5 @@
 #![allow(unreachable_patterns)]
+mod cast;
 mod ndarray_ext;
 
 pub use ndarray_ext::NdArrayExt;

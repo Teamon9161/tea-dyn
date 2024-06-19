@@ -120,16 +120,7 @@ impl<'a> Context<'a> {
                 } else {
                     tbail!("Cannot get column by name, the context does not have column map")
                 }
-            } // Symbol::String(name) => {
-              //     if let Some(map) = &self.col_map {
-              //         let idx = map
-              //             .get(name.as_str())
-              //             .ok_or_else(|| terr!("column {} not found in context", name))?;
-              //         self.get(*idx)
-              //     } else {
-              //         tbail!("Cannot get column by name, the context does not have column map")
-              //     }
-              // }
+            }
         }
     }
 }

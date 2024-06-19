@@ -6,8 +6,8 @@ use pyo3::types::{PyDict, PyIterator, PyList};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-fn create_col_map_from_pyiter<'py>(
-    columns: &Bound<'py, PyIterator>,
+fn create_col_map_from_pyiter(
+    columns: &Bound<'_, PyIterator>,
     len: Option<usize>,
 ) -> PyResult<HashMap<Arc<str>, usize>> {
     let len = len.unwrap_or_else(|| columns.len().unwrap());
@@ -20,9 +20,7 @@ fn create_col_map_from_pyiter<'py>(
     Ok(col_map)
 }
 
-fn create_col_map_from_pylist<'py>(
-    columns: &Bound<'py, PyList>,
-) -> PyResult<HashMap<Arc<str>, usize>> {
+fn create_col_map_from_pylist(columns: &Bound<'_, PyList>) -> PyResult<HashMap<Arc<str>, usize>> {
     let mut col_map = HashMap::with_capacity(columns.len() * 2);
     for (i, col) in columns.iter().enumerate() {
         let col = col.as_str()?;

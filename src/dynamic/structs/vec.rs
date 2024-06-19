@@ -1,4 +1,6 @@
 #![allow(unreachable_patterns)]
+use std::default;
+
 use crate::prelude::*;
 use tea_macros::GetDtype;
 
@@ -42,6 +44,13 @@ pub enum DynVec {
     DateTimeNs(Vec<DateTime<unit::Nanosecond>>),
     #[cfg(feature = "time")]
     TimeDelta(Vec<TimeDelta>),
+}
+
+impl Default for DynVec {
+    #[inline]
+    fn default() -> Self {
+        DynVec::F64(Vec::default())
+    }
 }
 
 macro_rules! impl_from {

@@ -61,24 +61,6 @@ macro_rules! impl_from {
                     }
             })*
         }
-
-        // impl<T: GetDataType> From<T> for Scalar {
-        //     #[allow(unreachable_patterns)]
-        //     #[inline]
-        //     fn from(v: T) -> Self {
-        //         match T::dtype() {
-        //             $(
-        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
-        //                     // safety: we have checked the type
-        //                     // let v: $ty = unsafe{std::mem::transmute_copy(&v)};
-        //                     let v: $ty = unsafe{std::mem::transmute(v)};
-        //                     Scalar::$arm(v.into())
-        //                 },
-        //             )*
-        //             type_ => unimplemented!("Create Scalar from type {:?} is not implemented", type_),
-        //         }
-        //     }
-        // }
     };
 }
 
