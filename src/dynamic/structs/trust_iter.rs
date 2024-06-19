@@ -78,6 +78,17 @@ impl<'a> DynTrustIter<'a> {
     }
 
     #[inline]
+    pub fn chain(self, other: Self) -> Self {
+        match_trust_iter!(self; Cast(i) => {
+            match_trust_iter!(other; Cast(j) => {
+                let iter = i.chain(j.map(Cast::cast));
+                Ok(iter.into())
+            },)
+        },)
+        .unwrap()
+    }
+
+    #[inline]
     #[cfg(feature = "pl")]
     pub fn collect_series(self) -> TResult<Series> {
         use tevec::polars::datatypes::*;
@@ -199,17 +210,18 @@ macro_rules! dt_iter {
 }
 
 pub trait TrustIterCast<'a>: TrustedLen + 'a {
-    fn cast_to<T2: 'a>(self) -> impl TrustedLen<Item = T2> + 'a
+    fn cast_to<T2: 'a>(self) -> Box<dyn TrustedLen<Item = T2> + 'a>
     where
         Self::Item: Cast<T2> + 'a;
 }
 
 impl<'a, I: TrustedLen<Item = T> + 'a, T> TrustIterCast<'a> for I {
     #[inline]
-    fn cast_to<T2: 'a>(self) -> impl TrustedLen<Item = T2> + 'a
+    // fn cast_to<T2: 'a>(self) -> impl TrustedLen<Item = T2> + 'a
+    fn cast_to<T2: 'a>(self) -> Box<dyn TrustedLen<Item = T2> + 'a>
     where
         T: Cast<T2> + 'a,
     {
-        self.map(Cast::cast)
+        Box::new(self.map(Cast::cast))
     }
 }
