@@ -35,6 +35,12 @@ pub enum Scalar {
     TimeDelta(TimeDelta),
 }
 
+impl From<Option<u64>> for Scalar {
+    fn from(v: Option<u64>) -> Self {
+        Scalar::OptI64(v.map(Cast::cast))
+    }
+}
+
 impl<'a> TryFrom<AnyValue<'a>> for Scalar {
     type Error = TError;
     fn try_from(value: AnyValue<'a>) -> TResult<Self> {

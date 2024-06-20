@@ -68,19 +68,19 @@ pub fn concat(es: Vec<Data>, axis: Option<usize>) -> TResult<Data> {
 
 impl Rolling {
     #[allow(unreachable_patterns)]
-    pub fn agg(self, func: Expr) -> Expr {
+    pub fn apply(self, func: Expr) -> Expr {
         let node = BaseNode {
             name: "rolling_apply",
             func: Arc::new(move |data: Data, backend| {
                 match data {
-                    Data::Vec(_) => {
+                    Data::Vec(vec) => {
                         match_vec!(
-                            data.into_vec()?;
+                            vec.as_ref();
                             Dynamic(vec) => {
                                 // let func = func.to_func();
                                 let iter = vec.rolling_custom_iter(self.window, |v| {
                                     let ctx = Context::new(v);
-                                    let res = func.eval(&ctx, Some(Backend::Vec)).unwrap();
+                                    let res = func.eval(&ctx, Some(backend)).unwrap();
                                     res.into_owned(Some(backend)).unwrap()
                                 }).collect_trusted_to_vec();
                                 let res = concat(iter, None)?;
@@ -124,5 +124,23 @@ impl Expr {
     #[inline]
     pub fn rolling(self, window: usize) -> Rolling {
         Rolling { window, expr: self }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_rolling_apply() -> TResult<()> {
+        let v = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let ctx = Context::new(v);
+        let res = s(0)
+            .rolling(3)
+            .apply(s(0).sum())
+            .eval(&ctx, Some(Backend::Vec))?
+            .into_vec()?
+            .i32()?;
+        assert_eq!(res.as_ref(), &[1, 3, 6, 9, 12, 15, 18, 21, 24]);
+        Ok(())
     }
 }
