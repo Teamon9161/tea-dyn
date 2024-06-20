@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::prelude::*;
 use derive_more::{From, IsVariant};
 #[cfg(feature = "pl")]
@@ -7,7 +9,7 @@ use polars::prelude::Series;
 pub enum Data<'a> {
     TrustIter(Arc<DynTrustIter<'a>>),
     Scalar(Arc<Scalar>),
-    Vec(Arc<DynVec>),
+    Vec(Arc<DynVec<'a>>),
     Array(Arc<DynArray<'a>>),
     #[cfg(feature = "pl")]
     Series(Series),
@@ -34,7 +36,7 @@ impl<'a> From<DynArray<'a>> for Data<'a> {
     }
 }
 
-impl<T: GetDataType> From<Vec<T>> for Data<'_> {
+impl<T: Dtype> From<Vec<T>> for Data<'_> {
     #[inline]
     fn from(vec: Vec<T>) -> Self {
         let vec: DynVec = vec.into();
@@ -42,9 +44,28 @@ impl<T: GetDataType> From<Vec<T>> for Data<'_> {
     }
 }
 
-impl From<DynVec> for Data<'_> {
+impl<'a, T: Dtype> From<&'a [T]> for Data<'a> {
     #[inline]
-    fn from(vec: DynVec) -> Self {
+    fn from(vec: &'a [T]) -> Self {
+        let vec: DynVec = vec.into();
+        vec.into()
+    }
+}
+
+impl<'a, T: Dtype + Clone> From<Cow<'a, [T]>> for Data<'a>
+where
+    DynVec<'a>: From<Cow<'a, [T]>>,
+{
+    #[inline]
+    fn from(vec: Cow<'a, [T]>) -> Self {
+        let vec: DynVec<'a> = vec.into();
+        vec.into()
+    }
+}
+
+impl<'a> From<DynVec<'a>> for Data<'a> {
+    #[inline]
+    fn from(vec: DynVec<'a>) -> Self {
         Data::Vec(Arc::new(vec))
     }
 }
@@ -165,7 +186,7 @@ impl<'a> Data<'a> {
     }
 
     #[inline]
-    pub fn into_vec(self) -> TResult<DynVec> {
+    pub fn into_vec(self) -> TResult<DynVec<'a>> {
         match self {
             Data::Vec(vec) => match Arc::try_unwrap(vec) {
                 Ok(vec) => Ok(vec),
@@ -299,12 +320,6 @@ impl<'a> Data<'a> {
     pub fn try_titer(&self) -> TResult<DynTrustIter> {
         match self {
             Data::TrustIter(_iter) => {
-                // if let Some(iter) = Arc::get_mut(iter) {
-                //     let iter = std::mem::take(iter);
-                //     Ok(iter)
-                // } else {
-                //     tbail!("Can not iterate over a reference of iterator")
-                // }
                 tbail!("Can not iterate over a reference of iterator")
             }
             Data::Vec(vec) => vec.titer(),
@@ -312,6 +327,35 @@ impl<'a> Data<'a> {
             Data::Array(array) => array.titer(),
             #[cfg(feature = "pl")]
             Data::Series(s) => s.titer(),
+        }
+    }
+
+    /// try get a owned data, this will change the lifetime of data
+    pub fn into_owned<'b>(self, backend: Option<Backend>) -> Result<Data<'b>, Self> {
+        match self {
+            Data::TrustIter(iter) => Arc::try_unwrap(iter)
+                .map(|i| i.collect(backend.unwrap_or(Backend::Vec)).unwrap())
+                .map_err(Into::into),
+            Data::Vec(vec) => match Arc::try_unwrap(vec) {
+                Ok(vec) => Ok(vec.into_owned().into()),
+                Err(vec) => Ok(vec.clone_inner().into()),
+            },
+            Data::Scalar(scalar) => match Arc::try_unwrap(scalar) {
+                Ok(scalar) => Ok(scalar.into()),
+                Err(scalar) => {
+                    if let Some(scalar) = scalar.cheap_clone() {
+                        Ok(scalar.into())
+                    } else {
+                        Ok(scalar.clone_inner().into())
+                    }
+                }
+            },
+            Data::Array(array) => match Arc::try_unwrap(array) {
+                Ok(arr) => Ok(arr.into_owned().into()),
+                Err(arr) => Ok(arr.clone_inner().into()),
+            },
+            #[cfg(feature = "pl")]
+            Data::Series(s) => Ok(s.into()),
         }
     }
 }

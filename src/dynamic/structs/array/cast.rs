@@ -34,7 +34,7 @@ impl<'a, T> ArbArray<'a, T> {
     }
 
     #[inline]
-    fn cast_with<T2>(self, _other: &ArbArray<'a, T2>) -> ArbArray<'a, T2>
+    pub fn cast_with<T2>(self, _other: &ArbArray<'a, T2>) -> ArbArray<'a, T2>
     where
         T2: Dtype,
         T: Dtype,
@@ -48,7 +48,7 @@ impl<'a, T> ArbArray<'a, T> {
     }
 
     #[inline]
-    fn cast_ref_with<T2>(&self, _other: &ArbArray<'a, T2>) -> &ArbArray<'a, T2>
+    pub fn cast_ref_with<T2>(&self, _other: &ArbArray<'a, T2>) -> &ArbArray<'a, T2>
     where
         T2: Dtype,
         T: Dtype,

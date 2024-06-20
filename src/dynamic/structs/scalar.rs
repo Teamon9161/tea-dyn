@@ -127,6 +127,17 @@ impl Scalar {
         )
         .ok()
     }
+
+    #[inline]
+    pub fn clone_inner(&self) -> Self {
+        match_scalar!(
+            self;
+            (Normal | TimeRelated)(v) => Ok((*v).into()),
+            (String | #[cfg(feature = "py")] Object | VecUsize)(v) => Ok(v.clone().into()),
+        )
+        .unwrap()
+    }
+
     #[inline]
     pub fn cast_i32(self) -> TResult<i32> {
         match_scalar!(self; Numeric(v) => Ok(v.cast()),)

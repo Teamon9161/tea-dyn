@@ -275,6 +275,25 @@ impl<'a, T: Clone> ArbArray<'a, T> {
     }
 
     #[inline]
+    pub fn into_owned<'b>(self) -> ArbArray<'b, T> {
+        match_arb!(
+            self;
+            Owned(v) => Ok(v.into()),
+            View(v) | ViewMut(v) => Ok(v.to_owned().into()),
+        )
+        .unwrap()
+    }
+
+    #[inline]
+    pub fn clone_inner<'b>(&self) -> ArbArray<'b, T> {
+        match_arb!(
+            self;
+            (Owned | View | ViewMut)(v) => Ok(v.to_owned().into()),
+        )
+        .unwrap()
+    }
+
+    #[inline]
     /// # Safety
     ///
     /// this is safe only when 'b is actually longer than 'a
@@ -381,15 +400,31 @@ impl<'a> DynArray<'a> {
     }
 
     #[inline]
-    pub fn into_vec(self) -> TResult<DynVec> {
+    pub fn into_owned<'b>(self) -> DynArray<'b> {
+        match_array!(
+            self;
+            Dynamic(v) => Ok(v.into_owned().into()),
+        )
+        .unwrap()
+    }
+
+    #[inline]
+    pub fn clone_inner<'b>(&self) -> DynArray<'b> {
+        match_array!(
+            self;
+            Dynamic(v) => Ok(v.clone_inner().into()),
+        )
+        .unwrap()
+    }
+
+    #[inline]
+    pub fn into_vec<'b>(self) -> TResult<DynVec<'b>> {
         match_array!(self; Dynamic(v) => Ok(v.into_vec()?.into()),)
     }
 
     #[inline]
-    pub fn from_vec(vec: DynVec) -> TResult<DynArray<'a>> {
-        match_vec!(vec; Dynamic(v) => {
-            Ok(Array1::from_vec(v).into_dyn().into())
-        },)
+    pub fn from_vec(vec: DynVec<'a>) -> TResult<DynArray<'a>> {
+        vec.into_array()
     }
 
     #[inline]

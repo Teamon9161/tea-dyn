@@ -23,6 +23,8 @@ pub fn lit<V: Into<Scalar>>(v: V) -> Expr {
     Expr::new(node)
 }
 
+// pub type ExprFunc = Arc<dyn for<'b> Fn(&Context<'b>, Option<Backend>) -> TResult<Data<'b>>>;
+
 impl Expr {
     #[inline]
     pub fn new<N: Into<Node>>(node: N) -> Self {
@@ -57,11 +59,9 @@ impl Expr {
         self
     }
 
-    pub fn to_func<'a, 'b, 'c>(
-        &'a self,
-    ) -> Box<dyn Fn(&'c Context<'b>, Option<Backend>) -> TResult<Data<'b>> + 'a> {
-        let func = |ctx, backend: Option<Backend>| {
-            let mut data: Option<Data<'b>> = None;
+    pub fn to_func<'b>(&self) -> impl Fn(&Context<'b>, Option<Backend>) -> TResult<Data<'b>> + '_ {
+        move |ctx: &Context<'b>, backend: Option<Backend>| {
+            let mut data: Option<Data> = None;
             let backend = backend.unwrap_or_default();
             // backend is the same for all nodes
             for node in &self.nodes {
@@ -87,9 +87,9 @@ impl Expr {
                     }
                 }
             }
-            data.ok_or_else(|| terr!("No data to return"))
-        };
-        Box::new(func)
+            data.ok_or_else(move || terr!("No data to return"))
+        }
+        // Arc::new(func)
     }
 
     #[inline]
@@ -98,14 +98,13 @@ impl Expr {
         ctx: &'a Context<'b>,
         backend: Option<Backend>,
     ) -> TResult<Data<'b>> {
+        let name = self.name.as_ref().map(AsRef::as_ref);
         let func = self.to_func();
         let backend = if backend.is_none() && ctx.backend.is_some() {
             ctx.backend
         } else {
             backend
         };
-        Ok(func(ctx, backend)?
-            .into_result(backend)?
-            .alias(self.name.as_ref().map(AsRef::as_ref)))
+        Ok(func(ctx, backend)?.into_result(backend)?.alias(name))
     }
 }

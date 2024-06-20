@@ -1,4 +1,4 @@
-use crate::prelude::TrustIterCast;
+// use crate::prelude::TrustIterCast;
 use crate::prelude::*;
 use tevec::ndarray::{concatenate, ArrayView1, Axis, Ix1};
 
@@ -50,8 +50,11 @@ pub fn concat(es: Vec<Data>, axis: Option<usize>) -> TResult<Data> {
                 // cast data to the same dtype
                 let mut data = Vec::with_capacity(len);
                 data.push(a1);
-                es.into_iter().for_each(|e| {
-                    match_array!(e.into_array().unwrap(); Cast(a) => Ok(data.push(a.cast_into())),).unwrap();
+                es.for_each(|e| {
+                    match_array!(e.into_array().unwrap(); Cast(a) => {
+                        data.push(a.cast_into());
+                        Ok(())
+                    },).unwrap();
                 });
                 // create a view of the data
                 let arr_views = data.iter().map(|a| a.view()).collect_trusted_to_vec();
@@ -64,42 +67,57 @@ pub fn concat(es: Vec<Data>, axis: Option<usize>) -> TResult<Data> {
 }
 
 impl Rolling {
-    // pub fn agg(self, func: Expr) -> Expr {
-    //     let node = CtxNode {
-    //         name: "rolling_apply",
-    //         func: Arc::new(move |data: Data<'_>, ctx, backend| {
-    //             let func = func.to_func();
-    //             match data {
-    //                 Data::Array(_) => {
-    //                     match_array!(
-    //                         data.into_array()?;
-    //                         Dynamic(arr) => {
-    //                             let arr1 = arr.view().into_dimensionality::<Ix1>().unwrap();
-    //                             let iter = arr1.rolling_custom_iter(
-    //                                 self.window,
-    //                                 |_view| {
-    //                                     // let dyn_arr: DynArray = view.view().into_dyn().into();
-    //                                     // let ctx = Context::new(dyn_arr);
-    //                                     // let res = func(&ctx, Some(Backend::Numpy)).unwrap();
-    //                                     // unsafe{std::mem::transmute::<_, Data<'static>>(res)}
-    //                                     1
-    //                                 },
-    //                                 // None
-    //                             );
-    //                             // todo!();
-    //                             let arr: DynArray = arr1.to_owned().into_dyn().into();
-    //                             Ok(arr.into())
-    //                             // let arr: DynArray = arr.into_dyn().into();
-    //                             // Ok(arr.into())
-    //                         },
-    //                     )
-    //                 }
-    //                 _ => todo!(),
-    //             }
-    //         }),
-    //     };
-    //     self.expr.chain(node)
-    // }
+    #[allow(unreachable_patterns)]
+    pub fn agg(self, func: Expr) -> Expr {
+        let node = BaseNode {
+            name: "rolling_apply",
+            func: Arc::new(move |data: Data, backend| {
+                match data {
+                    Data::Vec(_) => {
+                        match_vec!(
+                            data.into_vec()?;
+                            Dynamic(vec) => {
+                                // let func = func.to_func();
+                                let iter = vec.rolling_custom_iter(self.window, |v| {
+                                    let ctx = Context::new(v);
+                                    let res = func.eval(&ctx, Some(Backend::Vec)).unwrap();
+                                    res.into_owned(Some(backend)).unwrap()
+                                }).collect_trusted_to_vec();
+                                let res = concat(iter, None)?;
+                                Ok(res)
+                            },
+                        )
+                    }
+                    // Data::Array(_) => {
+                    //     match_array!(
+                    //         data.into_array()?;
+                    //         Dynamic(arr) => {
+                    //             let arr1 = arr.view().into_dimensionality::<Ix1>().unwrap();
+                    //             let iter = arr1.rolling_custom_iter::<'_, _, _>(
+                    //                 self.window,
+                    //                 |_view| {
+                    //                     // let dyn_arr: DynArray = view.view().into_dyn().into();
+                    //                     // let ctx = Context::new(dyn_arr);
+                    //                     // let res = func(&ctx, Some(Backend::Numpy)).unwrap();
+                    //                     // unsafe{std::mem::transmute::<_, Data<'static>>(res)}
+                    //                     1
+                    //                 },
+                    //                 // None
+                    //             );
+                    //             // todo!();
+                    //             let arr: DynArray = arr1.to_owned().into_dyn().into();
+                    //             Ok(arr.into())
+                    //             // let arr: DynArray = arr.into_dyn().into();
+                    //             // Ok(arr.into())
+                    //         },
+                    //     )
+                    // }
+                    _ => todo!(),
+                }
+            }),
+        };
+        self.expr.chain(node)
+    }
 }
 
 impl Expr {

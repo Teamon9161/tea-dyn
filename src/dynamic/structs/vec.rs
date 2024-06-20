@@ -1,7 +1,7 @@
 #![allow(unreachable_patterns)]
-use std::default;
-
 use crate::prelude::*;
+use derive_more::From;
+use std::borrow::Cow;
 use tea_macros::GetDtype;
 
 impl<T, U> TransmuteDtype<U> for Vec<T> {
@@ -16,50 +16,62 @@ impl<T, U> TransmuteDtype<U> for Vec<T> {
     }
 }
 
-#[derive(GetDtype, Debug, Clone)]
-pub enum DynVec {
-    Bool(Vec<bool>),
-    F32(Vec<f32>),
-    F64(Vec<f64>),
-    I32(Vec<i32>),
-    I64(Vec<i64>),
-    U8(Vec<u8>),
-    U64(Vec<u64>),
-    Usize(Vec<usize>),
-    String(Vec<String>),
-    OptBool(Vec<Option<bool>>),
-    OptF32(Vec<Option<f32>>),
-    OptF64(Vec<Option<f64>>),
-    OptI32(Vec<Option<i32>>),
-    OptI64(Vec<Option<i64>>),
-    OptUsize(Vec<Option<usize>>),
-    VecUsize(Vec<Vec<usize>>),
-    #[cfg(feature = "py")]
-    Object(Vec<Object>),
-    #[cfg(feature = "time")]
-    DateTimeMs(Vec<DateTime<unit::Millisecond>>),
-    #[cfg(feature = "time")]
-    DateTimeUs(Vec<DateTime<unit::Microsecond>>),
-    #[cfg(feature = "time")]
-    DateTimeNs(Vec<DateTime<unit::Nanosecond>>),
-    #[cfg(feature = "time")]
-    TimeDelta(Vec<TimeDelta>),
+impl<'a, T, U: 'a> TransmuteDtype<U> for &'a [T] {
+    type Output = &'a [U];
+
+    #[inline]
+    /// # Safety
+    ///
+    /// the caller must ensure T and U is actually the same type
+    unsafe fn into_dtype(self) -> Self::Output {
+        std::mem::transmute(self)
+    }
 }
 
-impl Default for DynVec {
+#[derive(GetDtype, Debug, From)]
+pub enum DynVec<'a> {
+    Bool(Cow<'a, [bool]>),
+    F32(Cow<'a, [f32]>),
+    F64(Cow<'a, [f64]>),
+    I32(Cow<'a, [i32]>),
+    I64(Cow<'a, [i64]>),
+    U8(Cow<'a, [u8]>),
+    U64(Cow<'a, [u64]>),
+    Usize(Cow<'a, [usize]>),
+    String(Cow<'a, [String]>),
+    OptBool(Cow<'a, [Option<bool>]>),
+    OptF32(Cow<'a, [Option<f32>]>),
+    OptF64(Cow<'a, [Option<f64>]>),
+    OptI32(Cow<'a, [Option<i32>]>),
+    OptI64(Cow<'a, [Option<i64>]>),
+    OptUsize(Cow<'a, [Option<usize>]>),
+    VecUsize(Cow<'a, [Vec<usize>]>),
+    #[cfg(feature = "py")]
+    Object(Cow<'a, [Object]>),
+    #[cfg(feature = "time")]
+    DateTimeMs(Cow<'a, [DateTime<unit::Millisecond>]>),
+    #[cfg(feature = "time")]
+    DateTimeUs(Cow<'a, [DateTime<unit::Microsecond>]>),
+    #[cfg(feature = "time")]
+    DateTimeNs(Cow<'a, [DateTime<unit::Nanosecond>]>),
+    #[cfg(feature = "time")]
+    TimeDelta(Cow<'a, [TimeDelta]>),
+}
+
+impl<'a> Default for DynVec<'a> {
     #[inline]
     fn default() -> Self {
-        DynVec::F64(Vec::default())
+        DynVec::F64(Cow::Owned(Vec::default()))
     }
 }
 
 macro_rules! impl_from {
 
     ($($(#[$meta:meta])? ($arm: ident, $dtype: ident $(($inner: path))?, $ty: ty, $func_name: ident)),* $(,)?) => {
-        impl DynVec {
+        impl<'a> DynVec<'a> {
             $(
                 $(#[$meta])?
-                pub fn $func_name(self) -> TResult<Vec<$ty>> {
+                pub fn $func_name(self) -> TResult<Cow<'a, [$ty]>> {
                     if let DynVec::$arm(v) = self {
                         Ok(v)
                     } else {
@@ -68,11 +80,27 @@ macro_rules! impl_from {
             })*
         }
 
-        impl<T: GetDataType> From<Vec<T>> for DynVec {
+        impl<'a, T: Dtype> From<Vec<T>> for DynVec<'a> {
             #[allow(unreachable_patterns)]
             #[inline]
             fn from(vec: Vec<T>) -> Self {
-                match T::dtype() {
+                match T::type_() {
+                    $(
+                        $(#[$meta])? DataType::$dtype $(($inner))? => {
+                            // safety: we have checked the type
+                            unsafe{DynVec::$arm(vec.into_dtype().into())}
+                        },
+                    )*
+                    type_ => unimplemented!("Create Vector from type {:?} is not implemented", type_),
+                }
+            }
+        }
+
+        impl<'a, T: Dtype> From<&'a [T]> for DynVec<'a> {
+            #[allow(unreachable_patterns)]
+            #[inline]
+            fn from(vec: &'a [T]) -> Self {
+                match T::type_() {
                     $(
                         $(#[$meta])? DataType::$dtype $(($inner))? => {
                             // safety: we have checked the type
@@ -133,7 +161,7 @@ macro_rules! d_vec {
     };
 }
 
-impl DynVec {
+impl<'a> DynVec<'a> {
     #[inline]
     pub fn len(&self) -> usize {
         match_vec!(self; Dynamic(v) => Ok(v.len()),).unwrap()
@@ -146,7 +174,21 @@ impl DynVec {
 
     #[inline]
     pub fn get(&self, index: usize) -> TResult<Scalar> {
-        match_vec!(self; Dynamic(v) => v.get(index).map(|v| v.into()),)
+        match_vec!(self; Dynamic(v) => Vec1View::get(v.as_ref(), index).map(|v| v.into()),)
+    }
+
+    #[inline]
+    pub fn into_owned<'b>(self) -> DynVec<'b> {
+        match_vec!(self; Dynamic(v) => Ok(v.into_owned().into()),).unwrap()
+    }
+
+    #[inline]
+    pub fn clone_inner<'b>(&self) -> DynVec<'b> {
+        match_vec!(self; Dynamic(v) => match v {
+            Cow::Borrowed(v) => Ok(v.to_vec().into()),
+            Cow::Owned(v) => Ok(v.clone().into()),
+        },)
+        .unwrap()
     }
 
     #[inline]
@@ -156,17 +198,32 @@ impl DynVec {
 
     #[inline]
     #[allow(clippy::should_implement_trait)]
-    pub fn into_titer(self) -> TResult<DynTrustIter<'static>> {
-        match_vec!(self; Dynamic(v) => Ok(v.into_iter().into()),)
+    pub fn into_titer(self) -> TResult<DynTrustIter<'a>> {
+        // match_vec!(self; Dynamic(v) => Ok(v.into_iter().into()),)
+        match_vec!(self; Dynamic(v) => {
+            match v {
+                Cow::Owned(v) => Ok(v.into_iter().into()),
+                Cow::Borrowed(v) => Ok(v.titer().into()),
+            }
+        },)
     }
 
     #[inline]
     #[cfg(feature = "ndarray")]
-    pub fn into_array<'a>(self) -> TResult<DynArray<'a>> {
+    pub fn into_array(self) -> TResult<DynArray<'a>> {
         use tevec::ndarray::Array1;
         match_vec!(self; Dynamic(v) => {
-            let arr = Array1::from_vec(v).into_dyn();
-            Ok(arr.into())
+            match v {
+                Cow::Owned(v) => {
+                    let arr = Array1::from_vec(v).into_dyn();
+                    Ok(arr.into())
+                },
+                Cow::Borrowed(v) => {
+                    // TODO: can we avoid clone here?
+                    let arr = Array1::from_vec(v.to_vec()).into_dyn();
+                    Ok(arr.into())
+                },
+            }
         },)
     }
 }

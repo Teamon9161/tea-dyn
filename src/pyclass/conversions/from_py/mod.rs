@@ -58,7 +58,7 @@ impl<'py> FromPyObject<'py> for Backend {
     }
 }
 
-impl<'py> FromPyObject<'py> for DynVec {
+impl<'py> FromPyObject<'py> for DynVec<'py> {
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         let vec = if let Ok(v) = obj.extract::<Vec<bool>>() {
             v.into()

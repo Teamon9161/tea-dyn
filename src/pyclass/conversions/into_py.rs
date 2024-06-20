@@ -7,13 +7,13 @@ use pyo3_polars::PySeries;
 #[cfg(feature = "time")]
 use numpy::datetime::{units, Datetime as NPDatetime};
 
-impl IntoPy<PyObject> for DynVec {
+impl<'a> IntoPy<PyObject> for DynVec<'a> {
     #[allow(unreachable_patterns)]
     fn into_py(self, py: Python) -> PyObject {
         match_vec!(self;
-            (Normal | String | VecUsize)(e) => Ok(e.into_py(py)),
-            Time(vec) => Ok(vec.into_iter().map(|v| v.to_cr().unwrap()).collect_trusted_to_vec().into_py(py)),
-            Object(vec) => Ok(unsafe{TransmuteDtype::<PyObject>::into_dtype(vec)}.into_py(py)),
+            (Normal | String | VecUsize)(e) => Ok(e.into_owned().into_py(py)),
+            Time(vec) => Ok(vec.iter().map(|v| v.to_cr().unwrap()).collect_trusted_to_vec().into_py(py)),
+            Object(vec) => Ok(unsafe{TransmuteDtype::<PyObject>::into_dtype(vec.into_owned())}.into_py(py)),
         )
         .unwrap()
     }

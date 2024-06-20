@@ -34,7 +34,7 @@ mod tests {
             .eval(&ctx, Some(Backend::Vec))?
             .into_vec()?
             .f64()?;
-        assert_eq!(res, &[1.0, 2.0, 3.0]);
+        assert_eq!(res.as_ref(), &[1.0, 2.0, 3.0]);
         let res = s(2).eval(&ctx, None)?.into_scalar()?.string()?;
         assert_eq!(res.as_str(), "hello");
         // we cannot change context, so it should fail if the data is an iterator
@@ -62,7 +62,7 @@ mod tests {
         let ctx = Context::new(d1_array![-1.0, 2.0, -3.0]);
         let expr = s(0).abs().abs();
         let res = expr.eval(&ctx, Some(Backend::Numpy))?.into_vec()?.f64()?;
-        assert_eq!(res, &[1.0, 2.0, 3.0]);
+        assert_eq!(res.as_ref(), &[1.0, 2.0, 3.0]);
         Ok(())
     }
 

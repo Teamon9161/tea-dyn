@@ -52,7 +52,7 @@ impl<T: Into<Symbol>> From<T> for SelectNode {
 #[allow(clippy::type_complexity)]
 pub struct BaseNode {
     pub name: &'static str,
-    pub func: Arc<dyn Fn(Data, Backend) -> TResult<Data>>,
+    pub func: Arc<dyn for<'a> Fn(Data<'a>, Backend) -> TResult<Data<'a>>>,
 }
 
 #[derive(Clone)]

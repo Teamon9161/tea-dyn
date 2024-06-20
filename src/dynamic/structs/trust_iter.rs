@@ -67,7 +67,7 @@ unsafe impl Sync for DynTrustIter<'_> {}
 impl<'a> DynTrustIter<'a> {
     #[inline]
     #[allow(unreachable_patterns)]
-    pub fn collect_vec(self) -> TResult<DynVec> {
+    pub fn collect_vec<'b>(self) -> TResult<DynVec<'b>> {
         crate::match_trust_iter!(self; Dynamic(i) => Ok(i.collect_trusted_to_vec().into()),)
     }
 
