@@ -3,6 +3,8 @@ use crate::prelude::*;
 use derive_more::From;
 use std::borrow::Cow;
 use tea_macros::GetDtype;
+#[cfg(feature = "pl")]
+use tevec::polars::prelude::Series;
 
 impl<T, U> TransmuteDtype<U> for Vec<T> {
     type Output = Vec<U>;
@@ -225,5 +227,56 @@ impl<'a> DynVec<'a> {
                 },
             }
         },)
+    }
+
+    #[inline]
+    #[cfg(feature = "pl")]
+    pub fn into_series(self) -> TResult<Series> {
+        use tevec::{
+            polars::prelude::*,
+            polars_arrow::{bitmap::Bitmap, legacy::utils::CustomIterTools},
+        };
+        match_vec!(self;
+            // zero copy
+            (I32 | I64 | U64)(v) => {
+                match v {
+                    Cow::Owned(v) => Ok(Series::from_vec("", v)),
+                    Cow::Borrowed(v) => Ok(Series::from_vec("", v.to_vec())),
+                }
+            },
+            // zero copy but need mask
+            (F32)(v) => {
+                let mask_iter = v.titer().map(|v| v.is_none());
+                let bitmap: Bitmap = mask_iter.collect_trusted();
+                match v {
+                    Cow::Owned(v) => {
+                        Ok(Float32Chunked::from_vec_validity("", v, Some(bitmap)).into())
+                    },
+                    Cow::Borrowed(v) => Ok(Float32Chunked::from_vec_validity("", v.to_vec(), Some(bitmap)).into()),
+                }
+            },
+            // zero copy but need mask
+            (F64)(v) => {
+                let mask_iter = v.titer().map(|v| v.is_none());
+                let bitmap: Bitmap = mask_iter.collect_trusted();
+                match v {
+                    Cow::Owned(v) => {
+                        Ok(Float64Chunked::from_vec_validity("", v, Some(bitmap)).into())
+                    },
+                    Cow::Borrowed(v) => Ok(Float64Chunked::from_vec_validity("", v.to_vec(), Some(bitmap)).into()),
+                }
+            },
+            // clone is needed
+            (Bool | PlOpt)(v) => Ok(Series::from_iter(v.titer())),
+        )
+    }
+
+    #[inline]
+    #[cfg(feature = "pl")]
+    pub fn to_series(&self) -> TResult<Series> {
+        use tevec::polars::prelude::*;
+        match_vec!(self;
+            (PlOpt | PlInt | Float | Bool)(v) => Ok(Series::from_iter(v.titer())),
+        )
     }
 }

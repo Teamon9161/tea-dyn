@@ -94,6 +94,26 @@ impl<'a> DynTrustIter<'a> {
         use tevec::polars::datatypes::*;
         crate::match_trust_iter!(
             self;
+            Bool(i) => {
+                let arr: ChunkedArray<BooleanType> = i.map(|v| v.to_opt()).collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            F32(i) => {
+                let arr: ChunkedArray<Float32Type> = i.map(|v| v.to_opt()).collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            F64(i) => {
+                let arr: ChunkedArray<Float64Type> = i.map(|v| v.to_opt()).collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            I32(i) => {
+                let arr: ChunkedArray<Int32Type> = i.map(|v| v.to_opt()).collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
+            I64(i) => {
+                let arr: ChunkedArray<Int64Type> = i.map(|v| v.to_opt()).collect_trusted_vec1();
+                Ok(arr.into_series())
+            },
             OptBool(i) => {
                 let arr: ChunkedArray<BooleanType> = i.collect_trusted_vec1();
                 Ok(arr.into_series())

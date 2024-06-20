@@ -2,7 +2,9 @@
 mod cast;
 mod ndarray_ext;
 
-pub use ndarray_ext::NdArrayExt;
+use std::borrow::Cow;
+
+pub use ndarray_ext::{ArrayViewExt, NdArrayExt};
 
 use crate::prelude::*;
 use derive_more::From;
@@ -10,6 +12,8 @@ use derive_more::From;
 use numpy::datetime::{units, Datetime as NPDatetime};
 use tea_macros::GetDtype;
 use tevec::ndarray::prelude::*;
+#[cfg(feature = "pl")]
+use tevec::polars::series::Series;
 
 #[cfg(all(feature = "py", feature = "time"))]
 impl Dtype for NPDatetime<units::Milliseconds> {
@@ -302,7 +306,17 @@ impl<'a, T: Clone> ArbArray<'a, T> {
         std::mem::transmute(self)
     }
 
-    pub fn into_vec(self) -> TResult<Vec<T>> {
+    #[inline]
+    /// # Safety
+    ///
+    /// this is safe only when 'b is actually longer than 'a
+    /// do not use this function unless you are sure about the lifetime
+    pub unsafe fn as_life<'b>(&self) -> &ArbArray<'b, T> {
+        std::mem::transmute(self)
+    }
+
+    #[inline]
+    pub fn into_vec_owned(self) -> TResult<Vec<T>> {
         if self.ndim() > 1 {
             tbail!("Array with ndim > 1 should not be converted into vector")
         }
@@ -312,6 +326,53 @@ impl<'a, T: Clone> ArbArray<'a, T> {
             // TODO: can we optimize this? mut reference can be converted into owned without cloning
             ArbArray::ViewMut(v) => Ok(v.to_owned().into_raw_vec()),
         }
+    }
+
+    pub fn into_vec(self) -> TResult<DynVec<'a>>
+    where
+        T: Dtype,
+        DynVec<'a>: From<Cow<'a, [T]>>,
+    {
+        use std::mem::transmute;
+        if self.ndim() > 1 {
+            tbail!("Array with ndim > 1 should not be converted into vector")
+        }
+        match self {
+            ArbArray::Owned(v) => Ok(v.into_raw_vec().into()),
+            ArbArray::View(v) => {
+                if let Some(slice) = v.as_slice_memory_order() {
+                    // safe because memory is valid for 'a
+                    let slice = unsafe { transmute::<&[T], &'a [T]>(slice) };
+                    Ok(slice.into())
+                    // Ok(unsafe { transmute::<DynVec<'_>, DynVec<'a>>(slice) })
+                } else {
+                    let vec = v.to_owned().into_raw_vec();
+                    Ok(vec.into())
+                }
+            }
+            // TODO: can we optimize this? mut reference can be converted into owned without cloning
+            ArbArray::ViewMut(v) => {
+                if let Some(slice) = v.as_slice_memory_order() {
+                    // safe because memory is valid for 'a
+                    let slice = unsafe { transmute::<&[T], &'a [T]>(slice) };
+                    Ok(slice.into())
+                    // Ok(unsafe { transmute::<DynVec<'_>, DynVec<'a>>(slice) })
+                } else {
+                    let vec = v.to_owned().into_raw_vec();
+                    Ok(vec.into())
+                }
+            }
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "pl")]
+    pub fn into_series(self) -> TResult<Series>
+    where
+        T: Dtype,
+        DynVec<'a>: From<Cow<'a, [T]>>,
+    {
+        self.into_vec()?.into_series()
     }
 
     #[inline]
@@ -418,8 +479,25 @@ impl<'a> DynArray<'a> {
     }
 
     #[inline]
-    pub fn into_vec<'b>(self) -> TResult<DynVec<'b>> {
-        match_array!(self; Dynamic(v) => Ok(v.into_vec()?.into()),)
+    pub fn into_vec(self) -> TResult<DynVec<'a>> {
+        match_array!(self; Dynamic(v) => Ok(v.into_vec()?),)
+    }
+
+    #[inline]
+    pub fn into_vec_owned<'b>(self) -> TResult<DynVec<'b>> {
+        match_array!(self; Dynamic(v) => Ok(v.into_vec_owned()?.into()),)
+    }
+
+    #[inline]
+    #[cfg(feature = "pl")]
+    pub fn into_series(self) -> TResult<Series> {
+        self.into_vec()?.into_series()
+    }
+
+    #[inline]
+    #[cfg(feature = "pl")]
+    pub fn to_series(&self) -> TResult<Series> {
+        match_array!(self; Dynamic(v) => ArbArray::View(v.view()).into_series(),)
     }
 
     #[inline]

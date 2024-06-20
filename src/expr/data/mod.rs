@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+mod from;
 
 use crate::prelude::*;
 use derive_more::{From, IsVariant};
@@ -19,54 +19,6 @@ impl Default for Data<'_> {
     #[inline]
     fn default() -> Self {
         Data::Vec(Arc::new(DynVec::default()))
-    }
-}
-
-impl<'a> From<DynTrustIter<'a>> for Data<'a> {
-    #[inline]
-    fn from(iter: DynTrustIter<'a>) -> Self {
-        Data::TrustIter(Arc::new(iter))
-    }
-}
-
-impl<'a> From<DynArray<'a>> for Data<'a> {
-    #[inline]
-    fn from(arr: DynArray<'a>) -> Self {
-        Data::Array(Arc::new(arr))
-    }
-}
-
-impl<T: Dtype> From<Vec<T>> for Data<'_> {
-    #[inline]
-    fn from(vec: Vec<T>) -> Self {
-        let vec: DynVec = vec.into();
-        vec.into()
-    }
-}
-
-impl<'a, T: Dtype> From<&'a [T]> for Data<'a> {
-    #[inline]
-    fn from(vec: &'a [T]) -> Self {
-        let vec: DynVec = vec.into();
-        vec.into()
-    }
-}
-
-impl<'a, T: Dtype + Clone> From<Cow<'a, [T]>> for Data<'a>
-where
-    DynVec<'a>: From<Cow<'a, [T]>>,
-{
-    #[inline]
-    fn from(vec: Cow<'a, [T]>) -> Self {
-        let vec: DynVec<'a> = vec.into();
-        vec.into()
-    }
-}
-
-impl<'a> From<DynVec<'a>> for Data<'a> {
-    #[inline]
-    fn from(vec: DynVec<'a>) -> Self {
-        Data::Vec(Arc::new(vec))
     }
 }
 
@@ -106,6 +58,18 @@ impl From<Scalar> for Data<'_> {
 }
 
 impl<'a> Data<'a> {
+    #[inline]
+    pub fn is_pl(&self) -> bool {
+        #[cfg(feature = "pl")]
+        {
+            matches!(self, Data::Series(_))
+        }
+        #[cfg(not(feature = "pl"))]
+        {
+            false
+        }
+    }
+
     #[inline]
     pub fn backend(&self) -> Backend {
         match self {
@@ -181,6 +145,14 @@ impl<'a> Data<'a> {
         match self {
             Data::Series(series) => Ok(series),
             Data::TrustIter(iter) => Arc::try_unwrap(iter).unwrap().collect_series(),
+            Data::Vec(vec) => match Arc::try_unwrap(vec) {
+                Ok(vec) => vec.into_series(),
+                Err(vec) => vec.to_series(),
+            },
+            Data::Array(arr) => match Arc::try_unwrap(arr) {
+                Ok(arr) => arr.into_series(),
+                Err(arr) => arr.to_series(),
+            },
             _ => tbail!("Can not convert data to series, not implemented yet"),
         }
     }
@@ -311,12 +283,15 @@ impl<'a> Data<'a> {
                 }
             }
             #[cfg(feature = "pl")]
+            // polars series can not be consumed and turned into an iterator
+            // so we should use `try_titer`` instead of `try_into_iter``
             Data::Series(s) => Err(Data::Series(s)),
         }
     }
 
     /// try get an iterator from the data, but we cannn't create an iterator if
     /// data is a TrustIter
+    #[inline]
     pub fn try_titer(&self) -> TResult<DynTrustIter> {
         match self {
             Data::TrustIter(_iter) => {

@@ -7,7 +7,7 @@ mod trust_iter;
 mod vec;
 
 #[cfg(feature = "ndarray")]
-pub use array::{ArbArray, DynArray, NdArrayExt};
+pub use array::{ArbArray, ArrayViewExt, DynArray, NdArrayExt};
 pub use scalar::Scalar;
 #[cfg(feature = "pl")]
 pub use series::SeriesExt;

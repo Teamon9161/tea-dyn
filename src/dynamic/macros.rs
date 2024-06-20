@@ -79,11 +79,51 @@ macro_rules! match_enum {
         )
     };
 
+    // match option type support by polars
+    (@($enum: ident, $exprs: expr; PlOpt ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (PlOptInt | OptFloat | OptBool)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match pure int support by polars
+    (@($enum: ident, $exprs: expr; PlInt ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (I32 | I64 | U64)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
+        )
+    };
+
     // match pure int like arm
     (@($enum: ident, $exprs: expr; PureInt ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs;
-                (I32 | I64 | U64 | Usize)($e) => $body,
+                (PlInt | Usize)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match option int support by polars
+    (@($enum: ident, $exprs: expr; PlOptInt ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (OptI32 | OptI64)($e) => $body,
+            $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match option int support by polars
+    (@($enum: ident, $exprs: expr; OptInt ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs;
+                (PlOptInt | OptUsize)($e) => $body,
             $($rest)*)
             $($all_arms)*
         )
@@ -93,7 +133,7 @@ macro_rules! match_enum {
     (@($enum: ident, $exprs: expr; Int ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs;
-                (PureInt | OptUsize | OptI32 | OptI64)($e) => $body,
+                (PureInt | OptInt)($e) => $body,
             $($rest)*)
             $($all_arms)*
         )
@@ -109,10 +149,10 @@ macro_rules! match_enum {
         )
     };
 
-    // match float like arm
-    (@($enum: ident, $exprs: expr; Float ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+    // match option float like arm
+    (@($enum: ident, $exprs: expr; OptFloat ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
-            @($enum, $exprs; (PureFloat | OptF32 | OptF64)($e) => $body, $($rest)*)
+            @($enum, $exprs; (OptF32 | OptF64)($e) => $body, $($rest)*)
             $($all_arms)*
         )
     };
@@ -121,6 +161,14 @@ macro_rules! match_enum {
     (@($enum: ident, $exprs: expr; PureFloat ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
             @($enum, $exprs; (F32 | F64)($e) => $body, $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match float like arm
+    (@($enum: ident, $exprs: expr; Float ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; (PureFloat | OptFloat)($e) => $body, $($rest)*)
             $($all_arms)*
         )
     };

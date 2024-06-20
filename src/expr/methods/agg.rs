@@ -6,8 +6,12 @@ impl Expr {
             name: "sum",
             func: Arc::new(|data, _backend| match data.try_into_iter() {
                 Ok(iter) => Ok(iter.vsum()?.into()),
-                Err(_data) => {
-                    todo!()
+                Err(data) => {
+                    if let Ok(iter) = data.try_titer() {
+                        Ok(iter.vsum()?.into())
+                    } else {
+                        todo!()
+                    }
                 }
             }),
         };

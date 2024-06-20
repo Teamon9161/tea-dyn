@@ -1,6 +1,24 @@
 use crate::prelude::*;
 use tevec::ndarray::{prelude::*, Data, DataMut, Zip};
 
+pub trait ArrayViewExt<T, D: Dimension> {
+    /// # Safety
+    ///
+    /// this is safe only when 'b is actually longer than 'a
+    /// do not use this function unless you are sure about the lifetime
+    unsafe fn into_life<'b>(self) -> ArrayView<'b, T, D>;
+}
+
+impl<T, D: Dimension> ArrayViewExt<T, D> for ArrayView<'_, T, D> {
+    /// # Safety
+    ///
+    /// this is safe only when 'b is actually longer than 'a
+    /// do not use this function unless you are sure about the lifetime
+    unsafe fn into_life<'b>(self) -> ArrayView<'b, T, D> {
+        std::mem::transmute(self)
+    }
+}
+
 pub trait NdArrayExt<T, D: Dimension> {
     fn apply_along_axis<'a, 'b, S2, T2, F>(
         &'a self,
@@ -57,6 +75,7 @@ impl<T: Send + Sync, S: Data<Elem = T>, D: Dimension> NdArrayExt<T, D> for Array
         }
     }
 
+    /// use trust_iter map function on each dimension of ndarray
     fn calc_map_trust_iter_func<'a, F, U: Send + Sync + Clone>(
         &'a self,
         f: F,
