@@ -59,8 +59,10 @@ impl Expr {
         self
     }
 
-    pub fn to_func<'b>(&self) -> impl Fn(&Context<'b>, Option<Backend>) -> TResult<Data<'b>> + '_ {
-        move |ctx: &Context<'b>, backend: Option<Backend>| {
+    pub fn to_func(
+        &self,
+    ) -> impl for<'b> Fn(&Context<'b>, Option<Backend>) -> TResult<Data<'b>> + '_ {
+        move |ctx: &Context, backend: Option<Backend>| {
             let mut data: Option<Data> = None;
             let backend = backend.unwrap_or_default();
             // backend is the same for all nodes
@@ -91,6 +93,79 @@ impl Expr {
         }
         // Arc::new(func)
     }
+
+    // pub fn to_func(
+    //     &self,
+    // ) -> impl for<'b> Fn(&Context<'b>, Option<Backend>) -> TResult<Data<'b>> + '_ {
+    //     // let mut func = |(data, ctx, backend)| Ok((data, ctx, backend));
+    //     let mut func: Box<
+    //         dyn for<'b, 'c> Fn(
+    //                 (&'c Context<'b>, Option<Backend>),
+    //             )
+    //                 -> TResult<(Option<Data<'b>>, &'c Context<'b>, Backend)>
+    //             + '_,
+    //     > = Box::new(|(ctx, backend)| {
+    //         Ok((
+    //             None,
+    //             ctx,
+    //             backend.unwrap_or(ctx.backend.unwrap_or(Backend::Vec)),
+    //         ))
+    //     });
+    //     for node in &self.nodes {
+    //         match node {
+    //             Node::Select(n) => {
+    //                 func = Box::new(move |(ctx, backend)| {
+    //                     let (_, ctx, backend) = func((ctx, backend))?;
+    //                     Ok((Some(n.select(ctx)?), ctx, backend))
+    //                 });
+    //             }
+    //             Node::Lit(n) => {
+    //                 func = Box::new(move |(ctx, backend)| {
+    //                     let (_, ctx, backend) = func((ctx, backend))?;
+    //                     Ok((Some(n.eval()?), ctx, backend))
+    //                 });
+    //                 // func = |(data, ctx, backend)| Ok((n.eval()?, ctx, backend));
+    //             }
+    //             Node::Base(n) => {
+    //                 func = Box::new(move |(ctx, backend)| {
+    //                     let (data, ctx, backend) = func((ctx, backend))?;
+    //                     Ok((
+    //                         Some((n.func)(
+    //                             data.ok_or_else(|| {
+    //                                 terr!("Should select something to map as first")
+    //                             })?,
+    //                             backend,
+    //                         )?),
+    //                         ctx,
+    //                         backend,
+    //                     ))
+    //                 });
+    //                 // func = |(data, ctx, backend)| Ok(((n.func)(data, backend)?, ctx, backend));
+    //             }
+    //             Node::Context(n) => {
+    //                 func = Box::new(move |(ctx, backend)| {
+    //                     let (data, ctx, backend) = func((ctx, backend))?;
+    //                     Ok((
+    //                         Some((n.func)(
+    //                             data.ok_or_else(|| {
+    //                                 terr!("Should select something to map as first")
+    //                             })?,
+    //                             ctx,
+    //                             backend,
+    //                         )?),
+    //                         ctx,
+    //                         backend,
+    //                     ))
+    //                 });
+    //                 // func = |(data, ctx, backend)| Ok(((n.func)(data, ctx, backend)?, ctx, backend));
+    //             }
+    //         }
+    //     }
+    //     return move |ctx, backend| {
+    //         let (data, _ctx, _backend) = func((ctx, backend))?;
+    //         data.ok_or_else(|| terr!("No data to return"))
+    //     };
+    // }
 
     #[inline]
     pub fn eval<'a, 'b>(

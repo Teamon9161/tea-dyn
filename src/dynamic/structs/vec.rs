@@ -106,7 +106,7 @@ macro_rules! impl_from {
                     $(
                         $(#[$meta])? DataType::$dtype $(($inner))? => {
                             // safety: we have checked the type
-                            unsafe{DynVec::$arm(vec.into_dtype().into())}
+                            unsafe{DynVec::$arm(Cow::Borrowed(vec.into_dtype()))}
                         },
                     )*
                     type_ => unimplemented!("Create Vector from type {:?} is not implemented", type_),
@@ -269,6 +269,16 @@ impl<'a> DynVec<'a> {
             // clone is needed
             (Bool | PlOpt)(v) => Ok(Series::from_iter(v.titer())),
         )
+    }
+
+    #[inline]
+    pub fn into_backend(self, backend: Backend) -> TResult<Data<'a>> {
+        match backend {
+            Backend::Vec => Ok(self.into()),
+            Backend::Numpy | Backend::Pandas => self.into_array().map(Into::into),
+            #[cfg(feature = "pl")]
+            Backend::Polars => self.into_series().map(Into::into),
+        }
     }
 
     #[inline]

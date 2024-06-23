@@ -9,25 +9,45 @@ pub struct Rolling {
     expr: Expr,
 }
 
-pub fn concat_iter<'a, I: IntoIterator<Item = DynTrustIter<'a>>>(is: I) -> DynTrustIter<'a> {
-    let mut iter = is.into_iter();
-    if let Some(mut i1) = iter.next() {
-        for i in iter {
-            i1 = i1.chain(i);
-        }
-        i1
-    } else {
-        Default::default()
-    }
+const INIT_VEC_LENGTH: usize = 100;
 
-    // use tevec::polars::prelude::*;
-    // Float32Chunked::from_vec(name, v)
+#[allow(clippy::clone_on_copy)]
+pub fn concat_iter<'a, 'b, I: IntoIterator<Item = DynTrustIter<'a>>>(
+    is: I,
+    size_hint: Option<usize>,
+) -> TResult<DynVec<'b>> {
+    let mut iter = is.into_iter();
+    if let Some(i1) = iter.next() {
+        match_trust_iter!(i1; Cast(i1) => {
+            let iter_len = i1.len();
+            let mut vec = if let Some(size) = size_hint {
+                Vec::with_capacity(size * iter_len)
+            } else {
+                Vec::with_capacity(iter_len * INIT_VEC_LENGTH)
+            };
+            vec.extend(i1);
+            // a type hint iter so that we don't need to write code for each case
+            // TODO(Teamon): is there a better way to do auto type cast?
+            let type_hint = std::iter::once(Vec::get(&vec, 0).unwrap().clone());
+            for i in iter {
+                match_trust_iter!(i; Cast(i) => {
+                    vec.extend(i.cast_with(&type_hint));
+                    Ok(())
+                },)?;
+            }
+            Ok(vec.into())
+        },)
+    } else {
+        Ok(Default::default())
+    }
 }
 
-pub fn concat(es: Vec<Data>, axis: Option<usize>) -> TResult<Data> {
+#[allow(clippy::clone_on_copy)]
+pub fn concat(es: Vec<Data>, axis: Option<usize>, backend: Backend) -> TResult<Data> {
+    let es_len = es.len();
     if es.is_empty() {
         return Ok(Default::default());
-    } else if es.len() == 1 {
+    } else if es_len == 1 {
         return Ok(es.into_iter().next().unwrap());
     }
     // fast path for concat iter
@@ -36,29 +56,50 @@ pub fn concat(es: Vec<Data>, axis: Option<usize>) -> TResult<Data> {
             .into_iter()
             .map(|e| e.try_into_iter().unwrap())
             .collect_trusted_to_vec();
-        return Ok(concat_iter(is).into());
+        return concat_iter(is, Some(es_len)).map(move |v| v.into_backend(backend).unwrap());
     }
 
     #[cfg(feature = "pl")]
     if Vec::get(&es, 0).unwrap().is_series() {
         // this is needed because we can't consume polars series and turn it into a trust iter
         let s1 = Vec::get(&es, 0).unwrap();
-        let mut i1 = s1.try_titer().unwrap();
-        for i in es.iter().skip(1) {
-            i1 = i1.chain(i.try_titer().unwrap());
-        }
-        return Ok(i1.collect_series().unwrap().into());
+        let i1 = s1.try_titer().unwrap();
+        let out: Data<'_> = match_trust_iter!(i1; Cast(i1) => {
+            let iter_len = i1.len();
+            let mut vec = Vec::with_capacity(iter_len * es_len);
+            vec.extend(i1);
+            let type_hint = std::iter::once(Vec::get(&vec, 0).unwrap().clone());
+            for i in es.iter() {
+                match_trust_iter!(i.try_titer()?; Cast(i) => {
+                    // a type hint iter so that we don't need to write code for each case
+                    vec.extend(i.cast_with(&type_hint));
+                    Ok(())
+                },)?;
+            }
+            Ok(vec.into())
+        },)?;
+        return Ok(out.into_series().unwrap().into());
     }
     let len = es.len();
 
     let mut es = es.into_iter();
     let d1 = es.next().unwrap(); // first data
     match d1.try_into_iter() {
-        Ok(mut i1) => {
-            for i in es {
-                i1 = i1.chain(i.try_into_iter().unwrap());
-            }
-            Ok(i1.into())
+        Ok(i1) => {
+            let out: TResult<DynVec<'_>> = match_trust_iter!(i1; Cast(i1) => {
+                let iter_len = i1.len();
+                let mut vec = Vec::with_capacity(iter_len * es_len);
+                vec.extend(i1);
+                let type_hint = std::iter::once(Vec::get(&vec, 0).unwrap().clone());
+                for i in es {
+                    match_trust_iter!(i.try_into_iter().unwrap(); Cast(i) => {
+                        vec.extend(i.cast_with(&type_hint));
+                        Ok(())
+                    },)?;
+                }
+                Ok(vec.into())
+            },);
+            out.map(|v| v.into_backend(backend).unwrap())
         }
         Err(d1) => {
             // multi dimensional array
@@ -89,17 +130,24 @@ fn vec_rolling<'b>(
     func: &Expr,
     backend: Backend,
 ) -> TResult<Data<'b>> {
+    let func = func.to_func();
     match_vec!(
         vec.as_ref();
         Dynamic(vec) => {
-            // let func = func.to_func();
             let iter = vec.rolling_custom_iter(window, move |v| {
+                // let v = std::borrow::Cow::Borrowed(v.as_ref());
+                // let v: DynVec<'_> = v.into();
+                // let d: Data<'_> = v.into();
+                // let v: Data<'_> = v.into();
+                // let res = AggValidBasic::vsum(v.titer());
                 let ctx = Context::new(v);
-                let res = func.eval(&ctx, Some(backend)).unwrap();
+                let res: Data<'_> = func(&ctx, Some(backend)).unwrap().into_result(Some(backend)).unwrap();
                 res.into_owned(Some(backend)).unwrap()
+                // 1
             }).collect_trusted_to_vec();
-            let res = concat(iter, None)?;
+            let res = concat(iter, None, backend)?;
             Ok(res)
+            // Ok(1.into())
         },
     )
 }
@@ -111,6 +159,7 @@ fn array_rolling<'b>(
     func: &Expr,
     backend: Backend,
 ) -> TResult<Data<'b>> {
+    let func = func.to_func();
     match_array!(
         arr.as_ref();
         Dynamic(arr) => {
@@ -123,11 +172,11 @@ fn array_rolling<'b>(
                 move |view| {
                     let dyn_arr: DynArray = view.view().into_dyn().into();
                     let ctx = Context::new(dyn_arr);
-                    let res = func.eval(&ctx, Some(backend)).unwrap();
+                    let res: Data<'_> = func(&ctx, Some(backend)).unwrap().into_result(Some(backend)).unwrap();
                     res.into_owned(Some(backend)).unwrap()
                 },
             ).collect_trusted_to_vec();
-            let res = concat(iter, None)?;
+            let res = concat(iter, None, backend)?;
             Ok(res)
         },
     )
@@ -140,7 +189,6 @@ fn series_rolling<'b>(
     func: &Expr,
     backend: Backend,
 ) -> TResult<Data<'b>> {
-    // use tevec::polars::prelude::*;
     match_series!(
         se,
         s;
@@ -155,7 +203,7 @@ fn series_rolling<'b>(
                 let res = func.eval(&ctx, Some(backend)).unwrap();
                 res.into_owned(Some(backend)).unwrap()
             }).collect_trusted_to_vec();
-            let res = concat(iter, None)?;
+            let res = concat(iter, None, backend)?;
             Ok(res)
         }
     )
@@ -200,30 +248,25 @@ mod tests {
     #[test]
     fn test_rolling_apply() -> TResult<()> {
         // rolling in vec
-        const LENGTH: usize = 100;
-        let data: Vec<_> = (0..LENGTH).collect();
-        let ctx = Context::new(data);
-        let expr = s(0).rolling(100).apply(s(0).sum());
-        expr.eval(&ctx, Some(Backend::Vec))?;
-        // let v = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
-        // let ctx = Context::new(v);
-        // let res = s(0)
-        //     .rolling(3)
-        //     .apply(s(0).sum())
-        //     .eval(&ctx, Some(Backend::Vec))?
-        //     .into_vec()?
-        //     .i32()?;
-        // assert_eq!(res.as_ref(), &[1, 3, 6, 9, 12, 15, 18, 21, 24]);
-        // // rolling in array
-        // let arr = arr1(&[1, -2, 3, -4, 5, -6, 7, 8, 9]);
-        // let ctx = Context::new(arr.into_dyn());
-        // let res = s(0)
-        //     .rolling(3)
-        //     .apply(s(0).abs().sum())
-        //     .eval(&ctx, Some(Backend::Vec))?
-        //     .into_vec()?
-        //     .i32()?;
-        // assert_eq!(res.as_ref(), &[1, 3, 6, 9, 12, 15, 18, 21, 24]);
+        let v = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let ctx = Context::new(v);
+        let res = s(0)
+            .rolling(3)
+            .apply(s(0).sum())
+            .eval(&ctx, Some(Backend::Vec))?
+            .into_vec()?
+            .i32()?;
+        assert_eq!(res.as_ref(), &[1, 3, 6, 9, 12, 15, 18, 21, 24]);
+        // rolling in array
+        let arr = arr1(&[1, -2, 3, -4, 5, -6, 7, 8, 9]);
+        let ctx = Context::new(arr.into_dyn());
+        let res = s(0)
+            .rolling(3)
+            .apply(s(0).abs().sum())
+            .eval(&ctx, Some(Backend::Vec))?
+            .into_vec()?
+            .i32()?;
+        assert_eq!(res.as_ref(), &[1, 3, 6, 9, 12, 15, 18, 21, 24]);
         Ok(())
     }
 

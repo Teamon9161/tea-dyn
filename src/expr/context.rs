@@ -58,8 +58,10 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     #[inline]
     pub fn new<D: Into<Data<'a>>>(d: D) -> Self {
+        let mut data = Vec::with_capacity(1);
+        data.push(d.into());
         Context {
-            data: vec![d.into()],
+            data: data,
             backend: None,
             col_map: None,
         }

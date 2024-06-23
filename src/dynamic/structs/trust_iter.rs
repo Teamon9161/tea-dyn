@@ -233,14 +233,26 @@ pub trait TrustIterCast<'a>: TrustedLen + 'a {
     fn cast_to<T2: 'a>(self) -> Box<dyn TrustedLen<Item = T2> + 'a>
     where
         Self::Item: Cast<T2> + 'a;
+    fn cast_with<I2: TrustedLen>(self, i2: &I2) -> Box<dyn TrustedLen<Item = I2::Item> + 'a>
+    where
+        I2::Item: 'a,
+        Self::Item: Cast<I2::Item> + 'a;
 }
 
-impl<'a, I: TrustedLen<Item = T> + 'a, T> TrustIterCast<'a> for I {
+impl<'a, I: TrustedLen + 'a> TrustIterCast<'a> for I {
     #[inline]
     // fn cast_to<T2: 'a>(self) -> impl TrustedLen<Item = T2> + 'a
     fn cast_to<T2: 'a>(self) -> Box<dyn TrustedLen<Item = T2> + 'a>
     where
-        T: Cast<T2> + 'a,
+        Self::Item: Cast<T2> + 'a,
+    {
+        Box::new(self.map(Cast::cast))
+    }
+
+    fn cast_with<I2: TrustedLen>(self, _i2: &I2) -> Box<dyn TrustedLen<Item = I2::Item> + 'a>
+    where
+        I2::Item: 'a,
+        Self::Item: Cast<I2::Item> + 'a,
     {
         Box::new(self.map(Cast::cast))
     }

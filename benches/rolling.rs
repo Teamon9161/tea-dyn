@@ -24,7 +24,5 @@ fn bench_rolling_apply_lazy(b: &mut Bencher) {
     let data: Vec<_> = (0..LENGTH).collect();
     let ctx = Context::new(data);
     let expr = s(0).rolling(100).apply(s(0).sum());
-    expr.eval(&ctx, Some(Backend::Vec));
-    // b.iter(|| expr.eval(&ctx, Some(Backend::Vec)));
-    b.iter(|| {});
+    b.iter(|| expr.eval(&ctx, Some(Backend::Vec)));
 }
