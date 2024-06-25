@@ -12,6 +12,7 @@ impl<'a> DynTrustIter<'a> {
         match_trust_iter!(self; PureNumeric(e) => Ok(e.abs().into()),)
     }
 
+    #[inline]
     pub fn vshift(self, n: i32, value: Option<Scalar>) -> TResult<Self> {
         match_trust_iter!(self; Dynamic(e) => {
             Ok(e.vshift(n, value.map(|v| v.cast())).into())

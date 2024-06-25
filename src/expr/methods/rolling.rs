@@ -134,20 +134,16 @@ fn vec_rolling<'b>(
     match_vec!(
         vec.as_ref();
         Dynamic(vec) => {
+            // TODO(Teamon): this is quite slow as we need to cast v to a
+            // Context and then match context and evaluate expression
+            // is there a way to optimize this?
             let iter = vec.rolling_custom_iter(window, move |v| {
-                // let v = std::borrow::Cow::Borrowed(v.as_ref());
-                // let v: DynVec<'_> = v.into();
-                // let d: Data<'_> = v.into();
-                // let v: Data<'_> = v.into();
-                // let res = AggValidBasic::vsum(v.titer());
                 let ctx = Context::new(v);
                 let res: Data<'_> = func(&ctx, Some(backend)).unwrap().into_result(Some(backend)).unwrap();
                 res.into_owned(Some(backend)).unwrap()
-                // 1
             }).collect_trusted_to_vec();
             let res = concat(iter, None, backend)?;
             Ok(res)
-            // Ok(1.into())
         },
     )
 }
