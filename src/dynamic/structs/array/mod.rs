@@ -10,7 +10,7 @@ use crate::prelude::*;
 use derive_more::From;
 #[cfg(all(feature = "py", feature = "time"))]
 use numpy::datetime::{units, Datetime as NPDatetime};
-use tea_macros::GetDtype;
+use tevec::macros::GetDtype;
 use tevec::ndarray::prelude::*;
 #[cfg(feature = "pl")]
 use tevec::polars::series::Series;

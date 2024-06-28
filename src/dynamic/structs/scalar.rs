@@ -3,7 +3,7 @@ use crate::prelude::*;
 use derive_more::From;
 #[cfg(feature = "pl")]
 use polars::prelude::AnyValue;
-use tea_macros::GetDtype;
+use tevec::macros::GetDtype;
 
 #[derive(GetDtype, From, Debug, Clone)]
 pub enum Scalar {

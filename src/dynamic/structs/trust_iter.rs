@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use tea_macros::GetDtype;
+use tevec::macros::GetDtype;
 #[cfg(feature = "pl")]
 use tevec::polars::prelude::{ChunkedArray, IntoSeries, Series};
 
