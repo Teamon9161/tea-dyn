@@ -81,6 +81,7 @@ impl<'a> Data<'a> {
     }
 
     #[inline]
+    #[cfg_attr(not(feature = "pl"), allow(unused_variables))]
     pub fn alias(self, name: Option<&str>) -> Self {
         // currently only Series has name
         #[cfg(feature = "pl")]

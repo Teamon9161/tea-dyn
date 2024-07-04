@@ -75,16 +75,19 @@ impl<'a> DynArray<'a> {
         // TODO: support more types, such as TimeDelta, String, Option<usize> and so on
         match_array!(self;
             PureNumeric(arr) | Object(arr) => Ok(arr.try_into_py(py, container)?),
+            #[cfg(feature = "time")]
             DateTimeMs(arr) => {
                 // safety: Numpy Datetime has the same memory layout with tevec DateTime
                 let np_arr: ArbArray<'_, NPDatetime<units::Milliseconds>> = unsafe{std::mem::transmute(arr)};
                 Ok(np_arr.try_into_py(py, container)?)
             },
+            #[cfg(feature = "time")]
             DateTimeUs(arr) => {
                 // safety: Numpy Datetime has the same memory layout with tevec DateTime
                 let np_arr: ArbArray<'_, NPDatetime<units::Microseconds>> = unsafe{std::mem::transmute(arr)};
                 Ok(np_arr.try_into_py(py, container)?)
             },
+            #[cfg(feature = "time")]
             DateTimeNs(arr) => {
                 // safety: Numpy Datetime has the same memory layout with tevec DateTime
                 let np_arr: ArbArray<'_, NPDatetime<units::Nanoseconds>> = unsafe{std::mem::transmute(arr)};
