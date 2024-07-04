@@ -99,6 +99,7 @@ impl<'a> DynArray<'a> {
 }
 
 impl<'py> Data<'py> {
+    #[allow(unreachable_patterns)]
     pub fn try_into_py(
         self,
         py: Python,
