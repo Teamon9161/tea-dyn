@@ -2,6 +2,8 @@ use tevec::prelude::{tbail, tensure, terr, TResult};
 
 use super::data::Data;
 use derive_more::From;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -16,6 +18,8 @@ pub enum Backend {
 
 /// Symbol is used to select data from context
 #[derive(Clone, From)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+
 pub enum Symbol {
     I32(i32),
     Usize(usize),
@@ -57,11 +61,12 @@ pub struct Context<'a> {
 
 impl<'a> Context<'a> {
     #[inline]
+    #[allow(clippy::vec_init_then_push)]
     pub fn new<D: Into<Data<'a>>>(d: D) -> Self {
         let mut data = Vec::with_capacity(1);
         data.push(d.into());
         Context {
-            data: data,
+            data,
             backend: None,
             col_map: None,
         }

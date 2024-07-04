@@ -270,7 +270,6 @@ mod tests {
     #[cfg(feature = "pl")]
     fn test_rolling_apply_pl() -> TResult<()> {
         use tevec::polars::prelude::*;
-        // use tevec::polars::testing::assert_series_eq;
         let expr = s(0).rolling(3).apply(s(0).sum()).alias("sum");
         // rolling in series
         let v = Series::new("a", &[1, 2, 3, 4, 5, 6, 7, 8, 9]);

@@ -240,14 +240,14 @@ macro_rules! match_enum {
         $crate::match_enum!(
             @($enum, $exprs; $($rest)*)
             $($all_arms)*
-            $($(#[$meta])? $arms($e) => $body,)*
+            $($(#[$meta])? $enum::$arms($e) => $body,)*
         )
     };
 
     // No more match arms, produce final output
     (@($enum: ident, $exprs: expr; $(,)?) $($all_arms: tt)*) => {
         {
-            use $enum::*;
+            // use $enum::*;
             match $exprs {
                 $($all_arms)*
                 _ => Err(terr!("Not supported arm for enum {:?}", stringify!($enum)))

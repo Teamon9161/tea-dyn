@@ -1,7 +1,11 @@
 use crate::prelude::*;
 use derive_more::From;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 #[derive(From, Clone)]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+
 pub enum Node {
     Lit(LitNode),
     Select(SelectNode),
@@ -10,6 +14,7 @@ pub enum Node {
 }
 
 #[derive(Clone)]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct LitNode {
     pub value: Arc<Scalar>,
 }
@@ -25,6 +30,7 @@ impl LitNode {
 }
 
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SelectNode {
     pub symbol: Symbol,
 }
@@ -50,6 +56,7 @@ impl<T: Into<Symbol>> From<T> for SelectNode {
 
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BaseNode {
     pub name: &'static str,
     pub func: Arc<dyn for<'a> Fn(Data<'a>, Backend) -> TResult<Data<'a>>>,

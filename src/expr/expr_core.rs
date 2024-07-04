@@ -1,6 +1,9 @@
 use crate::prelude::*;
+// #[cfg(feature = "serde")]
+// use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default)]
+// #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Expr {
     pub name: Option<Arc<str>>,
     pub nodes: Vec<Node>,

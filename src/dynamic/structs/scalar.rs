@@ -41,6 +41,7 @@ impl From<Option<u64>> for Scalar {
     }
 }
 
+#[cfg(feature = "pl")]
 impl<'a> TryFrom<AnyValue<'a>> for Scalar {
     type Error = TError;
     fn try_from(value: AnyValue<'a>) -> TResult<Self> {
