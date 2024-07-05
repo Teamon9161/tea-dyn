@@ -270,7 +270,7 @@ impl<'a, T: Clone> ArbArray<'a, T> {
 
     #[inline]
     pub fn get(&self, index: usize) -> TResult<&T> {
-        match_arb!(self; Owned(v) | View(v) | ViewMut(v) => v.get(index).ok_or_else(|| terr!(io(index, v.len()))),)
+        match_arb!(self; Owned(v) | View(v) | ViewMut(v) => v.get(index).ok_or_else(|| terr!(oob(index, v.len()))),)
     }
 
     #[inline]
