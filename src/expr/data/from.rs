@@ -18,67 +18,70 @@ impl<'a> From<DynArray<'a>> for Data<'a> {
     }
 }
 
-impl<'a, T: Dtype> From<ArrayViewD<'a, T>> for Data<'a>
+impl<'a, T> From<ArrayViewD<'a, T>> for Data<'a>
 where
-    ArrayViewD<'a, T>: Into<DynArray<'a>>,
+    DynArray<'a>: From<ArbArray<'a, T>>,
 {
     #[inline]
     fn from(arr: ArrayViewD<'a, T>) -> Self {
-        DynArray::from(arr).into()
+        DynArray::from(arr.into()).into()
     }
 }
 
-impl<'a, T: Dtype> From<ArrayViewMutD<'a, T>> for Data<'a>
+impl<'a, T> From<ArrayViewMutD<'a, T>> for Data<'a>
 where
-    ArrayViewMutD<'a, T>: Into<DynArray<'a>>,
+    DynArray<'a>: From<ArbArray<'a, T>>,
 {
     #[inline]
     fn from(arr: ArrayViewMutD<'a, T>) -> Self {
-        DynArray::from(arr).into()
+        DynArray::from(arr.into()).into()
     }
 }
 
-impl<'a, T: Dtype + 'a> From<ArrayD<T>> for Data<'a>
+impl<'a, T: 'a> From<ArrayD<T>> for Data<'a>
 where
-    ArrayD<T>: Into<DynArray<'a>>,
+    DynArray<'a>: From<ArbArray<'a, T>>,
 {
     #[inline]
     fn from(arr: ArrayD<T>) -> Self {
-        DynArray::from(arr).into()
+        DynArray::from(arr.into()).into()
     }
 }
 
-impl<'a, T: Dtype> From<ArrayView1<'a, T>> for Data<'a>
+impl<'a, T> From<ArrayView1<'a, T>> for Data<'a>
 where
-    ArrayView1<'a, T>: Into<DynArray<'a>>,
+    DynArray<'a>: From<ArbArray<'a, T>>,
 {
     #[inline]
     fn from(arr: ArrayView1<'a, T>) -> Self {
-        DynArray::from(arr.into_dyn()).into()
+        DynArray::from(arr.into_dyn().into()).into()
     }
 }
 
-impl<'a, T: Dtype> From<ArrayViewMut1<'a, T>> for Data<'a>
+impl<'a, T> From<ArrayViewMut1<'a, T>> for Data<'a>
 where
-    ArrayViewMut1<'a, T>: Into<DynArray<'a>>,
+    DynArray<'a>: From<ArbArray<'a, T>>,
 {
     #[inline]
     fn from(arr: ArrayViewMut1<'a, T>) -> Self {
-        DynArray::from(arr.into_dyn()).into()
+        DynArray::from(arr.into_dyn().into()).into()
     }
 }
 
-impl<'a, T: Dtype + 'a> From<Array1<T>> for Data<'a>
+impl<'a, T: 'a> From<Array1<T>> for Data<'a>
 where
-    Array1<T>: Into<DynArray<'a>>,
+    DynArray<'a>: From<ArbArray<'a, T>>,
 {
     #[inline]
     fn from(arr: Array1<T>) -> Self {
-        DynArray::from(arr.into_dyn()).into()
+        DynArray::from(arr.into_dyn().into()).into()
     }
 }
 
-impl<T: Dtype> From<Vec<T>> for Data<'_> {
+impl<'a, T: Clone + 'a> From<Vec<T>> for Data<'a>
+where
+    DynVec<'a>: From<Cow<'a, [T]>>,
+{
     #[inline]
     fn from(vec: Vec<T>) -> Self {
         let vec: DynVec = vec.into();
@@ -86,7 +89,10 @@ impl<T: Dtype> From<Vec<T>> for Data<'_> {
     }
 }
 
-impl<'a, T: Dtype> From<&'a [T]> for Data<'a> {
+impl<'a, T: Clone + 'a> From<&'a [T]> for Data<'a>
+where
+    DynVec<'a>: From<Cow<'a, [T]>>,
+{
     #[inline]
     fn from(vec: &'a [T]) -> Self {
         let vec: DynVec = vec.into();
@@ -94,7 +100,7 @@ impl<'a, T: Dtype> From<&'a [T]> for Data<'a> {
     }
 }
 
-impl<'a, T: Dtype + Clone> From<Cow<'a, [T]>> for Data<'a>
+impl<'a, T: Clone> From<Cow<'a, [T]>> for Data<'a>
 where
     DynVec<'a>: From<Cow<'a, [T]>>,
 {

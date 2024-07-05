@@ -118,6 +118,36 @@ impl<'a, T, U: 'a> TransmuteDtype<U> for ArbArray<'a, T> {
     }
 }
 
+impl<'a, T> From<ArrayViewD<'a, T>> for DynArray<'a>
+where
+    Self: From<ArbArray<'a, T>>,
+{
+    #[inline]
+    fn from(ty: ArrayViewD<'a, T>) -> Self {
+        ArbArray::<'a, T>::from(ty).into()
+    }
+}
+
+impl<'a, T> From<ArrayViewMutD<'a, T>> for DynArray<'a>
+where
+    Self: From<ArbArray<'a, T>>,
+{
+    #[inline]
+    fn from(ty: ArrayViewMutD<'a, T>) -> Self {
+        ArbArray::<'a, T>::from(ty).into()
+    }
+}
+
+impl<'a, T: 'a> From<ArrayD<T>> for DynArray<'a>
+where
+    Self: From<ArbArray<'a, T>>,
+{
+    #[inline]
+    fn from(ty: ArrayD<T>) -> Self {
+        ArbArray::<'a, T>::from(ty).into()
+    }
+}
+
 macro_rules! impl_from {
 
     ($($(#[$meta:meta])? ($arm: ident, $dtype: ident $(($inner: path))?, $ty: ty, $func_name: ident)),* $(,)?) => {
@@ -134,56 +164,56 @@ macro_rules! impl_from {
             )*
         }
 
-        impl<'a, T: Dtype + 'a> From<ArrayD<T>> for DynArray<'a> {
-            #[allow(unreachable_patterns)]
-            #[inline]
-            fn from(a: ArrayD<T>) -> Self {
-                match T::type_() {
-                    $(
-                        $(#[$meta])? DataType::$dtype $(($inner))? => {
-                            // safety: we have checked the type
-                            let a: ArbArray<'a, _> = a.into();
-                            unsafe{DynArray::$arm(a.into_dtype().into())}
-                        },
-                    )*
-                    type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
-                }
-            }
-        }
+        // impl<'a, T: Dtype + 'a> From<ArrayD<T>> for DynArray<'a> {
+        //     #[allow(unreachable_patterns)]
+        //     #[inline]
+        //     fn from(a: ArrayD<T>) -> Self {
+        //         match T::type_() {
+        //             $(
+        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
+        //                     // safety: we have checked the type
+        //                     let a: ArbArray<'a, _> = a.into();
+        //                     unsafe{DynArray::$arm(a.into_dtype().into())}
+        //                 },
+        //             )*
+        //             type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
+        //         }
+        //     }
+        // }
 
-        impl<'a, T: Dtype + 'a> From<ArrayViewD<'a, T>> for DynArray<'a> {
-            #[allow(unreachable_patterns)]
-            #[inline]
-            fn from(a: ArrayViewD<'a, T>) -> Self {
-                match T::type_() {
-                    $(
-                        $(#[$meta])? DataType::$dtype $(($inner))? => {
-                            // safety: we have checked the type
-                            let a: ArbArray<'a, _> = a.into();
-                            unsafe{DynArray::$arm(a.into_dtype().into())}
-                        },
-                    )*
-                    type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
-                }
-            }
-        }
+        // impl<'a, T: Dtype + 'a> From<ArrayViewD<'a, T>> for DynArray<'a> {
+        //     #[allow(unreachable_patterns)]
+        //     #[inline]
+        //     fn from(a: ArrayViewD<'a, T>) -> Self {
+        //         match T::type_() {
+        //             $(
+        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
+        //                     // safety: we have checked the type
+        //                     let a: ArbArray<'a, _> = a.into();
+        //                     unsafe{DynArray::$arm(a.into_dtype().into())}
+        //                 },
+        //             )*
+        //             type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
+        //         }
+        //     }
+        // }
 
-        impl<'a, T: Dtype + 'a> From<ArrayViewMutD<'a, T>> for DynArray<'a> {
-            #[allow(unreachable_patterns)]
-            #[inline]
-            fn from(a: ArrayViewMutD<'a, T>) -> Self {
-                match T::type_() {
-                    $(
-                        $(#[$meta])? DataType::$dtype $(($inner))? => {
-                            // safety: we have checked the type
-                            let a: ArbArray<'a, _> = a.into();
-                            unsafe{DynArray::$arm(a.into_dtype().into())}
-                        },
-                    )*
-                    type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
-                }
-            }
-        }
+        // impl<'a, T: Dtype + 'a> From<ArrayViewMutD<'a, T>> for DynArray<'a> {
+        //     #[allow(unreachable_patterns)]
+        //     #[inline]
+        //     fn from(a: ArrayViewMutD<'a, T>) -> Self {
+        //         match T::type_() {
+        //             $(
+        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
+        //                     // safety: we have checked the type
+        //                     let a: ArbArray<'a, _> = a.into();
+        //                     unsafe{DynArray::$arm(a.into_dtype().into())}
+        //                 },
+        //             )*
+        //             type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
+        //         }
+        //     }
+        // }
     };
 }
 

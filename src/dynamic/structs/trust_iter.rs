@@ -3,19 +3,12 @@ use tevec::macros::GetDtype;
 #[cfg(feature = "pl")]
 use tevec::polars::prelude::{ChunkedArray, IntoSeries, Series};
 
-impl<'a, T, U> TransmuteDtype<U> for Box<dyn TrustedLen<Item = T> + 'a> {
-    type Output = Box<dyn TrustedLen<Item = U> + 'a>;
-
-    #[inline]
-    /// # Safety
-    ///
-    /// the caller must ensure T and U is actually the same type
-    unsafe fn into_dtype(self) -> Self::Output {
-        std::mem::transmute(self)
-    }
-}
-
 pub type TvIter<'a, T> = Box<dyn TrustedLen<Item = T> + 'a>;
+
+trait IterIntoDyn<'a> {
+    type Dyn;
+    fn into_dyn(self) -> Self::Dyn;
+}
 
 #[derive(GetDtype)]
 pub enum DynTrustIter<'a> {
@@ -63,6 +56,31 @@ impl<'a> std::fmt::Debug for DynTrustIter<'a> {
 
 unsafe impl Send for DynTrustIter<'_> {}
 unsafe impl Sync for DynTrustIter<'_> {}
+
+impl<'a, I: TrustedLen + 'a> From<I> for DynTrustIter<'a>
+where
+    TvIter<'a, I::Item>: IterIntoDyn<'a, Dyn = DynTrustIter<'a>>,
+{
+    #[allow(unreachable_patterns)]
+    #[inline]
+    fn from(iter: I) -> Self {
+        let iter: TvIter<'a, I::Item> = Box::new(iter);
+        iter.into_dyn()
+    }
+}
+
+// impl<'a, I: TrustedLen + 'a> IterIntoDyn<'a> for I
+// where
+//     DynTrustIter<'a>: From<TvIter<'a, I::Item>>,
+// {
+//     type Dyn = DynTrustIter<'a>;
+
+//     #[inline]
+//     fn into_dyn(self) -> Self::Dyn {
+//         let iter: TvIter<'a, I::Item> = Box::new(self);
+//         iter.into()
+//     }
+// }
 
 impl<'a> DynTrustIter<'a> {
     #[inline]
@@ -160,25 +178,22 @@ macro_rules! impl_from {
                     } else {
                         tbail!("TrustIter is not of type {:?}", <$ty>::type_())
                     }
-            })*
+                }
+            )*
         }
 
-        impl<'a, T: GetDataType, I: TrustedLen<Item=T> + 'a> From<I> for DynTrustIter<'a> {
-            #[allow(unreachable_patterns)]
-            #[inline]
-            fn from(iter: I) -> Self {
-                match T::dtype() {
-                    $(
-                        $(#[$meta])? DataType::$dtype $(($inner))? => {
-                            let iter: TvIter<'a, T> = Box::new(iter);
-                            // safety: we have checked the type
-                            unsafe{DynTrustIter::<'a>::$arm(iter.into_dtype().into())}
-                        },
-                    )*
-                    type_ => unimplemented!("Create TrustIter from type {:?} is not implemented", type_),
+
+        $(
+            $(#[$meta])?
+            impl<'a> IterIntoDyn<'a> for TvIter<'a, $ty>{
+                type Dyn = DynTrustIter<'a>;
+
+                #[inline]
+                fn into_dyn(self) -> Self::Dyn {
+                    DynTrustIter::$arm(self)
                 }
             }
-        }
+        )*
     };
 }
 

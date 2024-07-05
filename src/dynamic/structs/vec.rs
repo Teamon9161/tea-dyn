@@ -6,29 +6,29 @@ use tevec::macros::GetDtype;
 #[cfg(feature = "pl")]
 use tevec::polars::prelude::Series;
 
-impl<T, U> TransmuteDtype<U> for Vec<T> {
-    type Output = Vec<U>;
+// impl<T, U> TransmuteDtype<U> for Vec<T> {
+//     type Output = Vec<U>;
 
-    #[inline]
-    /// # Safety
-    ///
-    /// the caller must ensure T and U is actually the same type
-    unsafe fn into_dtype(self) -> Self::Output {
-        std::mem::transmute(self)
-    }
-}
+//     #[inline]
+//     /// # Safety
+//     ///
+//     /// the caller must ensure T and U is actually the same type
+//     unsafe fn into_dtype(self) -> Self::Output {
+//         std::mem::transmute(self)
+//     }
+// }
 
-impl<'a, T, U: 'a> TransmuteDtype<U> for &'a [T] {
-    type Output = &'a [U];
+// impl<'a, T, U: 'a> TransmuteDtype<U> for &'a [T] {
+//     type Output = &'a [U];
 
-    #[inline]
-    /// # Safety
-    ///
-    /// the caller must ensure T and U is actually the same type
-    unsafe fn into_dtype(self) -> Self::Output {
-        std::mem::transmute(self)
-    }
-}
+//     #[inline]
+//     /// # Safety
+//     ///
+//     /// the caller must ensure T and U is actually the same type
+//     unsafe fn into_dtype(self) -> Self::Output {
+//         std::mem::transmute(self)
+//     }
+// }
 
 #[derive(GetDtype, Debug, From)]
 pub enum DynVec<'a> {
@@ -60,6 +60,27 @@ pub enum DynVec<'a> {
     TimeDelta(Cow<'a, [TimeDelta]>),
 }
 
+impl<'a, T: Clone + 'a> From<Vec<T>> for DynVec<'a>
+where
+    DynVec<'a>: From<Cow<'a, [T]>>,
+{
+    #[inline]
+    fn from(vec: Vec<T>) -> Self {
+        let cow_vec: Cow<'a, [T]> = vec.into();
+        cow_vec.into()
+    }
+}
+
+impl<'a, T: Clone + 'a> From<&'a [T]> for DynVec<'a>
+where
+    DynVec<'a>: From<Cow<'a, [T]>>,
+{
+    #[inline]
+    fn from(vec: &'a [T]) -> Self {
+        Cow::Borrowed(vec).into()
+    }
+}
+
 impl<'a> Default for DynVec<'a> {
     #[inline]
     fn default() -> Self {
@@ -82,37 +103,37 @@ macro_rules! impl_from {
             })*
         }
 
-        impl<'a, T: Dtype> From<Vec<T>> for DynVec<'a> {
-            #[allow(unreachable_patterns)]
-            #[inline]
-            fn from(vec: Vec<T>) -> Self {
-                match T::type_() {
-                    $(
-                        $(#[$meta])? DataType::$dtype $(($inner))? => {
-                            // safety: we have checked the type
-                            unsafe{DynVec::$arm(vec.into_dtype().into())}
-                        },
-                    )*
-                    type_ => unimplemented!("Create Vector from type {:?} is not implemented", type_),
-                }
-            }
-        }
+        // impl<'a, T: Dtype> From<Vec<T>> for DynVec<'a> {
+        //     #[allow(unreachable_patterns)]
+        //     #[inline]
+        //     fn from(vec: Vec<T>) -> Self {
+        //         match T::type_() {
+        //             $(
+        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
+        //                     // safety: we have checked the type
+        //                     unsafe{DynVec::$arm(vec.into_dtype().into())}
+        //                 },
+        //             )*
+        //             type_ => unimplemented!("Create Vector from type {:?} is not implemented", type_),
+        //         }
+        //     }
+        // }
 
-        impl<'a, T: Dtype> From<&'a [T]> for DynVec<'a> {
-            #[allow(unreachable_patterns)]
-            #[inline]
-            fn from(vec: &'a [T]) -> Self {
-                match T::type_() {
-                    $(
-                        $(#[$meta])? DataType::$dtype $(($inner))? => {
-                            // safety: we have checked the type
-                            unsafe{DynVec::$arm(Cow::Borrowed(vec.into_dtype()))}
-                        },
-                    )*
-                    type_ => unimplemented!("Create Vector from type {:?} is not implemented", type_),
-                }
-            }
-        }
+        // impl<'a, T: Dtype> From<&'a [T]> for DynVec<'a> {
+        //     #[allow(unreachable_patterns)]
+        //     #[inline]
+        //     fn from(vec: &'a [T]) -> Self {
+        //         match T::type_() {
+        //             $(
+        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
+        //                     // safety: we have checked the type
+        //                     unsafe{DynVec::$arm(Cow::Borrowed(vec.into_dtype()))}
+        //                 },
+        //             )*
+        //             type_ => unimplemented!("Create Vector from type {:?} is not implemented", type_),
+        //         }
+        //     }
+        // }
     };
 }
 

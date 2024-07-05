@@ -218,6 +218,22 @@ macro_rules! match_enum {
         )
     };
 
+    // match hashable dtype
+    (@($enum: ident, $exprs: expr; Hash ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; (PureInt | String | Bool | U8 | Time)($e) => $body, $($rest)*)
+            $($all_arms)*
+        )
+    };
+
+    // match hashable dtype
+    (@($enum: ident, $exprs: expr; TpHash ($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
+        $crate::match_enum!(
+            @($enum, $exprs; (PureNumeric | String | Bool | U8 | Time)($e) => $body, $($rest)*)
+            $($all_arms)*
+        )
+    };
+
     // expand | in macro (for example: (I32 | I64)(e))
     (@($enum: ident, $exprs: expr; ($($(#[$meta: meta])? $arms: ident)|+)($e: ident) => $body: expr, $($rest: tt)*) $($all_arms: tt)* ) => {
         $crate::match_enum!(
@@ -257,15 +273,5 @@ macro_rules! match_enum {
 
     ($enum: ident, ($exprs1: expr, $e1: ident, $($arm1: ident),*), ($exprs2: expr, $e2: ident, $($arm2: ident),*), $body: tt) => {
         $crate::match_enum!($enum, $exprs1, $e1, {$crate::match_enum!($enum, $exprs2, $e2, $body, $($arm2),*)}, $($arm1),*)
-    };
-
-    // match hashable dtype
-    ($enum: ident, hash $($tt: tt)*) => {
-        $crate::match_enum!(
-            $enum, $($tt)*,
-             F32, F64, I32, I64, U64, Usize,
-             String, Str, Bool, U8,
-             #[cfg(feature="time")] DateTime
-        )
     };
 }
