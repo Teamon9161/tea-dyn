@@ -6,17 +6,17 @@ use tevec::macros::GetDtype;
 #[cfg(feature = "pl")]
 use tevec::polars::prelude::Series;
 
-// impl<T, U> TransmuteDtype<U> for Vec<T> {
-//     type Output = Vec<U>;
+impl<T, U> TransmuteDtype<U> for Vec<T> {
+    type Output = Vec<U>;
 
-//     #[inline]
-//     /// # Safety
-//     ///
-//     /// the caller must ensure T and U is actually the same type
-//     unsafe fn into_dtype(self) -> Self::Output {
-//         std::mem::transmute(self)
-//     }
-// }
+    #[inline]
+    /// # Safety
+    ///
+    /// the caller must ensure T and U is actually the same type
+    unsafe fn into_dtype(self) -> Self::Output {
+        std::mem::transmute(self)
+    }
+}
 
 // impl<'a, T, U: 'a> TransmuteDtype<U> for &'a [T] {
 //     type Output = &'a [U];

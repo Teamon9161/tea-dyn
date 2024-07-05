@@ -9,8 +9,8 @@ name = "tea_dyn"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# default = ["py", "map", "rolling", "time", "pl"]
-default = ["map", "rolling", "time", "pl"]
+default = ["py", "map", "rolling", "time", "pl"]
+# default = ["map", "rolling", "time", "pl"]
 # default = ["map", "time"]
 # types
 time = ["tevec/time"]

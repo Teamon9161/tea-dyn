@@ -206,7 +206,6 @@ fn series_rolling<'b>(
 }
 
 impl Rolling {
-    // #[allow(unreachable_patterns)]
     pub fn apply(self, func: Expr) -> Expr {
         let node = BaseNode {
             name: "rolling_apply",
