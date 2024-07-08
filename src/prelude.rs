@@ -10,7 +10,9 @@ pub use crate::{match_arb, match_array};
 #[cfg(feature = "py")]
 pub use super::py_dtype::*;
 #[cfg(feature = "py")]
-pub use super::pyclass::{FromPyAny, PyAnyExt, PyExpr};
+pub(crate) use super::pyclass::PyExpr;
+#[cfg(feature = "py")]
+pub use super::pyclass::{FromPyAny, PyAnyExt};
 
 #[cfg(feature = "pl")]
 pub use crate::match_series;

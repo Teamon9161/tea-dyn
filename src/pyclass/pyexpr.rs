@@ -17,7 +17,7 @@ pub fn py_s(i: Bound<'_, PyAny>) -> PyResult<PyExpr> {
 #[pyclass(name = "Expr")]
 #[repr(transparent)]
 #[derive(Clone, Deref)]
-pub struct PyExpr(pub Expr);
+pub(crate) struct PyExpr(pub Expr);
 
 impl TryFrom<&Bound<'_, PyAny>> for PyExpr {
     type Error = PyErr;
