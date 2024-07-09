@@ -9,7 +9,7 @@ name = "tea_dyn"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["py", "map", "rolling", "time", "pl"]
+default = ["py", "map", "rolling", "time", "pl", "ffi"]
 # default = ["map", "rolling", "time", "pl"]
 # default = ["map", "time"]
 # types
@@ -23,6 +23,7 @@ ndarray = ["tevec/ndarray"]
 map = ["tevec/map", "ndarray"]
 agg = ["tevec/agg", "ndarray"]
 rolling = ["tevec/rolling", "ndarray"]
+ffi = ["tevec/ffi"]
 
 py = ["pyo3", "numpy", "ndarray"]
 
@@ -37,7 +38,7 @@ pyo3 = { version = "0.21", optional = true, features = [
     "nightly",
 ] }
 numpy = { version = "0.21.0", optional = true }
-inventory = "0.3"
+# inventory = "0.3"
 serde = { version = "1", optional = true, features = ["rc"] }
 serde_closure = { version = "0.3", optional = true }
 polars = { version = "0.41.3", optional = true, default-features = false }
