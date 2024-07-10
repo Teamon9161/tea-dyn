@@ -163,57 +163,6 @@ macro_rules! impl_from {
                 }
             )*
         }
-
-        // impl<'a, T: Dtype + 'a> From<ArrayD<T>> for DynArray<'a> {
-        //     #[allow(unreachable_patterns)]
-        //     #[inline]
-        //     fn from(a: ArrayD<T>) -> Self {
-        //         match T::type_() {
-        //             $(
-        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
-        //                     // safety: we have checked the type
-        //                     let a: ArbArray<'a, _> = a.into();
-        //                     unsafe{DynArray::$arm(a.into_dtype().into())}
-        //                 },
-        //             )*
-        //             type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
-        //         }
-        //     }
-        // }
-
-        // impl<'a, T: Dtype + 'a> From<ArrayViewD<'a, T>> for DynArray<'a> {
-        //     #[allow(unreachable_patterns)]
-        //     #[inline]
-        //     fn from(a: ArrayViewD<'a, T>) -> Self {
-        //         match T::type_() {
-        //             $(
-        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
-        //                     // safety: we have checked the type
-        //                     let a: ArbArray<'a, _> = a.into();
-        //                     unsafe{DynArray::$arm(a.into_dtype().into())}
-        //                 },
-        //             )*
-        //             type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
-        //         }
-        //     }
-        // }
-
-        // impl<'a, T: Dtype + 'a> From<ArrayViewMutD<'a, T>> for DynArray<'a> {
-        //     #[allow(unreachable_patterns)]
-        //     #[inline]
-        //     fn from(a: ArrayViewMutD<'a, T>) -> Self {
-        //         match T::type_() {
-        //             $(
-        //                 $(#[$meta])? DataType::$dtype $(($inner))? => {
-        //                     // safety: we have checked the type
-        //                     let a: ArbArray<'a, _> = a.into();
-        //                     unsafe{DynArray::$arm(a.into_dtype().into())}
-        //                 },
-        //             )*
-        //             type_ => unimplemented!("Create DynArray from type {:?} is not implemented", type_),
-        //         }
-        //     }
-        // }
     };
 }
 
@@ -360,7 +309,6 @@ impl<'a, T: Clone> ArbArray<'a, T> {
 
     pub fn into_vec(self) -> TResult<DynVec<'a>>
     where
-        T: Dtype,
         DynVec<'a>: From<Cow<'a, [T]>>,
     {
         use std::mem::transmute;
@@ -399,7 +347,6 @@ impl<'a, T: Clone> ArbArray<'a, T> {
     #[cfg(feature = "pl")]
     pub fn into_series(self) -> TResult<Series>
     where
-        T: Dtype,
         DynVec<'a>: From<Cow<'a, [T]>>,
     {
         self.into_vec()?.into_series()
