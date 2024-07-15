@@ -1,28 +1,26 @@
-#![feature(test)]
-
-extern crate test;
-use test::Bencher;
-
+use criterion::{criterion_group, criterion_main, Criterion};
 use tea_dyn::prelude::*;
-// use tevec::prelude::*;
-
-// const LENGTH: i32 = 10_000_000;
 const LENGTH: i32 = 10_000;
 
-#[bench]
-fn bench_rolling_apply_eager(b: &mut Bencher) {
+fn bench_rolling_apply_eager(c: &mut Criterion) {
     let data: Vec<_> = (0..LENGTH).collect();
-    b.iter(|| {
-        let _: Vec<_> = data
-            .rolling_custom(100, |view| AggValidBasic::vsum(view.as_ref().titer()), None)
-            .unwrap();
+    c.bench_function("rolling_apply eager", |b| {
+        b.iter(|| {
+            let _: Vec<_> = data
+                .rolling_custom(100, |view| AggValidBasic::vsum(view.as_ref().titer()), None)
+                .unwrap();
+        })
     });
 }
 
-#[bench]
-fn bench_rolling_apply_lazy(b: &mut Bencher) {
+fn bench_rolling_apply_lazy(c: &mut Criterion) {
     let data: Vec<_> = (0..LENGTH).collect();
     let ctx = Context::new(data);
     let expr = s(0).rolling(100).apply(s(0).sum());
-    b.iter(|| expr.eval(&ctx, Some(Backend::Vec)));
+    c.bench_function("rolling_apply lazy", |b| {
+        b.iter(|| expr.eval(&ctx, Some(Backend::Vec)))
+    });
 }
+
+criterion_group!(benches, bench_rolling_apply_eager, bench_rolling_apply_lazy);
+criterion_main!(benches);

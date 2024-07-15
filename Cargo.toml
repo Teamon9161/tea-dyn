@@ -9,7 +9,7 @@ name = "tea_dyn"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["py", "map", "rolling", "time", "pl", "ffi"]
+default = ["map", "rolling", "time", "pl", "ffi"]
 # default = ["map", "rolling", "time", "pl"]
 # default = ["map", "time"]
 # types
@@ -35,9 +35,10 @@ pyo3 = { version = "0.21", optional = true, features = [
     "multiple-pymethods",
     "abi3-py38",
     "chrono",
-    "nightly",
+    # "nightly",
 ] }
 numpy = { version = "0.21.0", optional = true }
+tevec = { version = "0.2.3", default-features = false }
 # inventory = "0.3"
 serde = { version = "1", optional = true, features = ["rc"] }
 serde_closure = { version = "0.3", optional = true }
@@ -50,9 +51,9 @@ derive_more = { version = "0.99", default-features = false, features = [
     "is_variant",
 ] }
 
-[dependencies.tevec]
-# path = "../tevec/tevec"
-git = "https://github.com/Teamon9161/tevec.git"
-branch = "master"
-default-features = false
-features = []
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "rolling"
+harness = false

@@ -10,7 +10,7 @@ test:
 	cargo test --all-features
 
 debug:
-	maturin develop
+	maturin develop --features py
 
 release:
-	maturin develop --release
+	maturin develop --release --features py
